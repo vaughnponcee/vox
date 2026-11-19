@@ -97,6 +97,15 @@ Measured on CPU after warm-up (real-time factor below 1 means faster than real t
 | Mandarin | 0.76 |
 | Japanese | 0.63 |
 
+## Look
+
+A phone-style screen on a pastel sky with drifting clouds and a skyline. The sky changes with the state: blue while listening, peach while thinking, mint while talking.
+
+- **The prompt card** overhangs the phone frame. It shows what you said, the bot's reply, and an emoji for the kind of reply (trap, roast, joke, generated).
+- **The host** is a coral gradient blob drawn on a canvas. It breathes when idle, widens its eyes and looks toward you while listening, wobbles while thinking, and opens its mouth with the voice's loudness while talking. Punchlines make it hop.
+- **The status line** under the host reads Hold to talk, Listening, Contemplating or Talking.
+- **Settings** (language, voice, pitch, speed, stings, options and the conversation history) slide up from the menu button.
+
 ## Push to talk
 
 - **Holding:** hold the red button (pointer capture, so sliding off doesn't drop it) or hold **Space**. Key repeat is ignored, and Space does nothing while a text field has focus.

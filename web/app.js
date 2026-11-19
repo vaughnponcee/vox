@@ -1,5 +1,5 @@
-// VOX-CHAOS front panel: wires push-to-talk, speech recognition, the brain,
-// the audio queue, voices, stings, meters and the face together.
+// vox-chaos: push-to-talk, speech recognition, the brain, the audio queue,
+// voices, stings and the mascot, wired together.
 import { Brain } from "./brain.js";
 import { AudioQueue, sentences } from "./queue.js";
 import { Voice, VOICES, LANGS } from "./voice.js";
@@ -14,85 +14,116 @@ const [corpus, data] = await Promise.all([
 const brain = new Brain(corpus, data, { trapEvery: 4 });
 const voice = new Voice();
 const face = new Face($("face"));
-const queue = new AudioQueue({ lookahead: 1, onState: () => {} });
-let lang = "en", preset = VOICES[0];
+let speaking = false;
+const queue = new AudioQueue({ lookahead: 1, onState: (s) => { speaking = s.state === "playing"; refreshState(); } });
+let lang = "en", preset = VOICES[0], thinking = false, holding = false;
 
-// ---------------------------------------------------------------- transcript
-function log(text, cls, tag = "") {
-  const lcd = $("lcd"), p = document.createElement("p");
-  p.className = cls;
-  p.textContent = text;
-  if (tag) { const t = document.createElement("span"); t.className = "tag"; t.textContent = tag; p.append(t); }
-  lcd.append(p);
-  while (lcd.children.length > 14) lcd.firstChild.remove();
+// ---------------------------------------------------------------- state: idle / listening / thinking / talking
+const STATUS = { idle: "Hold to talk", listening: "Listening...", thinking: "Contemplating...", talking: "Talking..." };
+function refreshState() {
+  const s = holding ? "listening" : thinking ? "thinking" : speaking ? "talking" : "idle";
+  document.body.dataset.state = s;
+  $("status").textContent = STATUS[s];
+  face.listening = s === "listening";
+  face.thinking = s === "thinking";
 }
 
-// ---------------------------------------------------------------- language + voice keys
+// ---------------------------------------------------------------- the card + history
+const EMOJI = { trap: "🎯", roast: "🔥", joke: "😂", grammar: "🌀", markov: "🎲", retrieval: "💬", llm: "🧠", sys: "🎤" };
+function show(text, kind, you = "") {
+  const card = $("card");
+  card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
+  $("emoji").textContent = EMOJI[kind] ?? "💬";
+  $("line").textContent = text;
+  $("you").hidden = !you;
+  $("you").textContent = you ? `“${you}”` : "";
+}
+function history(text, who, tag = "") {
+  const li = document.createElement("li");
+  li.className = who;
+  li.textContent = text;
+  if (tag) { const s = document.createElement("span"); s.textContent = tag; li.prepend(s); }
+  $("history").append(li);
+  while ($("history").children.length > 40) $("history").firstChild.remove();
+}
+
+// ---------------------------------------------------------------- settings sheet
+const openSheet = (on) => { $("sheet").classList.toggle("open", on); $("scrim").classList.toggle("open", on); document.body.classList.toggle("sheet-open", on); };
+$("menu").onclick = () => openSheet(!$("sheet").classList.contains("open"));
+$("scrim").onclick = () => openSheet(false);
+const nice = (s) => s.charAt(0) + s.slice(1).toLowerCase();
+
 for (const [code, l] of Object.entries(LANGS)) {
   const b = document.createElement("button");
-  b.className = "key"; b.textContent = code.toUpperCase(); b.title = l.name;
+  b.className = "chip";
+  b.textContent = nice(l.name);
   b.setAttribute("aria-pressed", String(code === lang));
   b.onclick = () => {
     lang = code;
-    document.querySelectorAll("#langs .key").forEach((k) => k.setAttribute("aria-pressed", String(k === b)));
-    $("lang-read").textContent = l.name;
+    document.querySelectorAll("#langs .chip").forEach((k) => k.setAttribute("aria-pressed", String(k === b)));
     if (lang !== "en" && preset.engine === "kokoro") selectVoice(VOICES.find((v) => v.id === "polyglot"));
-    log(`language: ${l.name}`, "sys");
+    show(`Now in ${b.textContent}. Go on, say something.`, "sys");
   };
   $("langs").append(b);
 }
 function selectVoice(v) {
   preset = v;
-  document.querySelectorAll("#voices .key").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.id === v.id)));
-  $("voice-note").textContent = v.engine === "kokoro" ? "KOKORO-82M" : "NATIVE SPEECH";
+  document.querySelectorAll("#voices .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.id === v.id)));
 }
 for (const v of VOICES) {
   const b = document.createElement("button");
-  b.className = "key"; b.textContent = v.label; b.dataset.id = v.id;
-  b.onclick = () => { selectVoice(v); if (v.engine === "kokoro" && lang !== "en") log("kokoro voices speak English; other languages use the native voice", "sys"); };
+  b.className = "chip";
+  b.textContent = nice(v.label);
+  b.dataset.id = v.id;
+  b.onclick = () => selectVoice(v);
   $("voices").append(b);
 }
 selectVoice(preset);
 
-// ---------------------------------------------------------------- processor + switches
-$("pitch").oninput = (e) => { voice.pitch = +e.target.value; $("pitch-v").textContent = `${voice.pitch > 0 ? "+" : ""}${voice.pitch} st`; };
-$("speed").oninput = (e) => { voice.speed = +e.target.value; $("speed-v").textContent = `${voice.speed.toFixed(2)}x`; };
-$("sw-text").onchange = (e) => { document.body.classList.toggle("text-mode", e.target.checked); if (e.target.checked) $("text").focus(); };
+$("pitch").oninput = (e) => { voice.pitch = +e.target.value; };
+$("speed").oninput = (e) => { voice.speed = +e.target.value; };
+$("sw-text").onchange = (e) => { document.body.classList.toggle("text-mode", e.target.checked); if (e.target.checked) { openSheet(false); $("text").focus(); } };
 $("sw-traps").onchange = (e) => { brain.trapEvery = e.target.checked ? 4 : 0; };
-$("sw-llm").onchange = (e) => { brain.llmUrl = e.target.checked ? $("llm-url").value.trim() : null; $("r-brain").textContent = e.target.checked ? "LLM+HYBRID" : "HYBRID"; };
+$("sw-llm").onchange = (e) => { brain.llmUrl = e.target.checked ? $("llm-url").value.trim() : null; };
 $("llm-url").onchange = () => { if ($("sw-llm").checked) brain.llmUrl = $("llm-url").value.trim(); };
 $("sw-neural").onchange = (e) => {
-  if (e.target.checked) { voice.unlock(); void voice.loadKokoro(); if (voice.tooSlow) { voice.forceNeural(); log("neural voice forced on: expect pauses", "sys"); } }
+  if (e.target.checked) { voice.unlock(); void voice.loadKokoro(); if (voice.tooSlow) voice.forceNeural(); }
   else { voice.tooSlow = true; voice.onStatus(); }
 };
-document.querySelectorAll("[data-sting]").forEach((b) => (b.onclick = () => { voice.unlock(); queue.push({ label: b.dataset.sting, play: (_p, s) => { face.punch(); return voice.sting(b.dataset.sting, s); } }); }));
+document.querySelectorAll("[data-sting]").forEach((b) => (b.onclick = () => {
+  voice.unlock();
+  queue.push({ label: b.dataset.sting, play: (_p, s) => { face.punch(); return voice.sting(b.dataset.sting, s); } });
+}));
 
 voice.onStatus = () => {
-  const s = voice.status, led = $("led-engine");
-  $("r-engine").textContent = s === "loading" ? `LOADING ${Math.round(voice.progress * 100)}%` : s === "failed" ? "NATIVE (NO WASM)"
-    : voice.tooSlow && s.startsWith("kokoro") ? "NATIVE (CPU TOO SLOW)" : s.toUpperCase();
-  if (voice.tooSlow && s.startsWith("kokoro") && !voice.warned && $("sw-neural").checked) {
-    voice.warned = true;
-    log(`neural voice runs ${voice.rtf.toFixed(1)}x slower than real time here (${s === "kokoro-webgpu" ? "WebGPU" : "CPU / WASM"}). Switched to the native voice. Toggle NEURAL VOICE off and on to force it.`, "sys");
-  }
-  led.className = "led " + (s.startsWith("kokoro") ? "ok" : s === "loading" ? "amb" : "");
-  if ((s === "kokoro-webgpu" || s === "kokoro-wasm") && !voice.announced) {
-    voice.announced = true;
-    log(`neural voice ready (${s === "kokoro-webgpu" ? "WebGPU" : "WASM"})`, "sys");
-  }
+  const s = voice.status;
+  $("engine").textContent =
+    s === "loading" ? `Downloading the voice... ${Math.round(voice.progress * 100)}%`
+    : s === "failed" ? "Not available here: using your browser's voice"
+    : voice.tooSlow && s.startsWith("kokoro") ? `Too slow on this device (${voice.rtf?.toFixed(1)}x real time): using your browser's voice`
+    : s === "kokoro-webgpu" ? "Kokoro-82M on your GPU" : s === "kokoro-wasm" ? "Kokoro-82M on your CPU" : "Loads on first talk (Kokoro-82M)";
 };
 
 // ---------------------------------------------------------------- speaking
+const stat = { layer: "", ms: "", tts: "" };
+function renderStats() {
+  $("stats").innerHTML = "";
+  for (const [k, v] of [["Brain layer", stat.layer], ["Think time", stat.ms], ["Voice", stat.tts]]) {
+    if (!v) continue;
+    const d = document.createElement("div");
+    d.textContent = `${k}: `;
+    const b = document.createElement("b"); b.textContent = v; d.append(b);
+    $("stats").append(d);
+  }
+}
+
 function speak(text, sfx) {
   const p = preset, l = lang;
   for (const part of sentences(text)) {
     queue.push({
       label: part,
       prepare: () => voice.prepare(part, p, l),
-      play: (prep, signal) => {
-        $("r-tts").textContent = prep.kind === "kokoro" ? `${Math.round(prep.synthMs)} MS` : "NATIVE";
-        return voice.play(prep, signal);
-      },
+      play: (prep, signal) => { stat.tts = prep.kind === "kokoro" ? `Kokoro, ${Math.round(prep.synthMs)} ms to synthesize` : "browser voice"; renderStats(); return voice.play(prep, signal); },
     });
   }
   if (sfx) queue.push({ label: sfx, play: (_p, s) => { face.punch(sfx === "crickets" ? "shocked" : "smug"); return voice.sting(sfx, s); } });
@@ -101,24 +132,36 @@ function speak(text, sfx) {
 async function handle(text) {
   text = text.trim();
   if (!text) return;
-  log(text, "you");
+  thinking = true; refreshState();
+  history(text, "you");
   const r = await brain.replyAsync(text, lang);
-  log(r.text, "vox", r.layer.toUpperCase());
-  $("r-layer").textContent = r.layer.toUpperCase();
-  $("r-ms").textContent = `${r.ms.toFixed(1)} MS`;
-  speak(r.text, r.sfx);
+  // a short beat of "contemplating" reads better than an instant answer
+  await new Promise((res) => setTimeout(res, 280));
+  thinking = false;
+  const kind = r.layer === "retrieval" ? (r.sfx === "boom" ? "roast" : r.text.includes(" ... ") ? "joke" : "retrieval") : r.layer;
+  show(r.text.replace(" ... ", "\n"), kind, text);
+  history(r.text, "vox", r.layer);
+  stat.layer = r.layer; stat.ms = `${r.ms.toFixed(2)} ms`; renderStats();
+  speak(r.text.replace(" ... ", ". "), r.sfx);
+  refreshState();
 }
 
-$("text").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") { voice.unlock(); if (!voice.loading && $("sw-neural").checked) void voice.loadKokoro(); queue.interrupt(); void handle(e.target.value); e.target.value = ""; }
-});
+const send = () => {
+  voice.unlock();
+  if (!voice.loading && $("sw-neural").checked) void voice.loadKokoro();
+  queue.interrupt();
+  void handle($("text").value);
+  $("text").value = "";
+};
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+$("send").onclick = send;
 
 // ---------------------------------------------------------------- push to talk
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, heard = "", interim = "", recStart = 0, holding = false, micStream = null, micAnalyser = null;
+let rec = null, heard = "", interim = "", recStart = 0, micStream = null, micAnalyser = null;
 
 if (!SR) {
-  $("note").innerHTML = '<span class="note">This browser has no speech recognition (try Chrome or Edge). Text input is on.</span>';
+  $("note").textContent = "This browser has no speech recognition (Chrome and Edge do). Typing is on.";
   $("sw-text").checked = true;
   document.body.classList.add("text-mode");
 } else {
@@ -133,20 +176,19 @@ async function openMic() {
     micAnalyser = voice.ctx.createAnalyser();
     micAnalyser.fftSize = 1024;
     voice.ctx.createMediaStreamSource(micStream).connect(micAnalyser);
-  } catch { log("no microphone access: the meter stays flat, recognition may still work", "sys"); }
+  } catch { /* the ring just won't pulse */ }
 }
 
-async function press() {
+function press() {
   if (holding) return;
   holding = true;
   voice.unlock();
   if ($("sw-neural").checked && !voice.loading) void voice.loadKokoro();
   queue.interrupt(); // you talk, it shuts up
-  face.listening = true;
   $("ptt").classList.add("down");
-  $("rec-state").textContent = "RECORDING";
   recStart = performance.now();
   heard = ""; interim = "";
+  refreshState();
   if (!SR) return;
   void openMic();
   rec = new SR();
@@ -159,86 +201,60 @@ async function press() {
       if (e.results[i].isFinal) heard += e.results[i][0].transcript + " ";
       else interim += e.results[i][0].transcript;
     }
-    $("rec-state").textContent = (heard + interim).slice(-28).toUpperCase() || "RECORDING";
+    const live = (heard + interim).trim();
+    if (live) { $("you").hidden = false; $("you").textContent = `“${live}”`; }
   };
-  rec.onerror = (e) => { if (e.error !== "aborted" && e.error !== "no-speech") log(`recognizer: ${e.error}`, "sys"); };
+  rec.onerror = (e) => { if (e.error === "not-allowed") show("I need the microphone for that. Or switch on typing in the menu.", "sys"); };
   rec.onend = () => {
     rec = null;
     const said = (heard + interim).trim();
-    $("rec-state").textContent = "STANDBY / SPACE";
     if (said) void handle(said);
-    else if (!holding) log("(heard nothing)", "sys");
+    else if (!holding) show("I didn't catch that. Hold the button while you talk.", "sys");
   };
-  try { rec.start(); } catch { /* already started */ }
+  try { rec.start(); } catch { /* already running */ }
 }
 
 function release() {
   if (!holding) return;
   holding = false;
-  face.listening = false;
   $("ptt").classList.remove("down");
-  // keep listening a moment so the last word isn't clipped
-  setTimeout(() => rec?.stop(), 250);
+  $("timer").textContent = "";
+  refreshState();
+  setTimeout(() => rec?.stop(), 250); // don't clip the last word
 }
 
 const ptt = $("ptt");
-ptt.addEventListener("pointerdown", (e) => { e.preventDefault(); ptt.setPointerCapture(e.pointerId); void press(); });
+ptt.addEventListener("pointerdown", (e) => { e.preventDefault(); ptt.setPointerCapture(e.pointerId); press(); });
 ptt.addEventListener("pointerup", release);
 ptt.addEventListener("pointercancel", release);
 ptt.addEventListener("contextmenu", (e) => e.preventDefault());
-const typing = (el) => el instanceof HTMLElement && (el.closest("input, textarea, select, [contenteditable]") !== null);
+const typing = (el) => el instanceof HTMLElement && el.closest("input, textarea, select, [contenteditable]") !== null;
 addEventListener("keydown", (e) => {
   if (e.code !== "Space" || typing(e.target)) return;
   e.preventDefault();
-  if (!e.repeat) void press(); // key repeat would retrigger press: ignore it
+  if (!e.repeat) press();
 });
 addEventListener("keyup", (e) => { if (e.code === "Space" && !typing(e.target)) { e.preventDefault(); release(); } });
 addEventListener("blur", release);
 
-// ---------------------------------------------------------------- meters + face
-function needle(canvas, level, label) {
-  const g = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
-  g.fillStyle = "#f3ead0"; g.fillRect(0, 0, w, h);
-  const cx = w / 2, cy = h * 1.05, r = h * 0.85;
-  g.strokeStyle = "#1c1b18"; g.lineWidth = 2;
-  g.beginPath(); g.arc(cx, cy, r, Math.PI * 1.22, Math.PI * 1.78); g.stroke();
-  // red zone above 0 dB
-  g.strokeStyle = "#d23b2b"; g.lineWidth = 6;
-  g.beginPath(); g.arc(cx, cy, r - 4, Math.PI * 1.66, Math.PI * 1.78); g.stroke();
-  g.fillStyle = "#1c1b18"; g.font = "bold 20px Consolas, monospace"; g.textAlign = "center";
-  [-20, -10, -5, 0, 3].forEach((db, i) => {
-    const a = Math.PI * (1.22 + 0.56 * (i / 4));
-    g.fillText(String(db), cx + Math.cos(a) * (r + 18), cy + Math.sin(a) * (r + 18) + 6);
-  });
-  g.font = "bold 22px Consolas, monospace";
-  g.fillText(label, cx, h * 0.62);
-  const a = Math.PI * (1.22 + 0.56 * Math.min(1, level));
-  g.strokeStyle = "#1c1b18"; g.lineWidth = 3;
-  g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * (r - 6), cy + Math.sin(a) * (r - 6)); g.stroke();
-}
-
-let inLvl = 0, outLvl = 0, last = performance.now();
+// ---------------------------------------------------------------- render loop
 const buf = new Float32Array(1024);
+let last = performance.now(), mic = 0;
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
-  let mic = 0;
+  let m = 0;
   if (micAnalyser && holding) {
     micAnalyser.getFloatTimeDomainData(buf);
     let s = 0; for (const x of buf) s += x * x;
-    mic = Math.min(1, Math.sqrt(s / buf.length) * 5);
+    m = Math.min(1, Math.sqrt(s / buf.length) * 5);
   }
-  const out = voice.level();
-  // ballistics: fast attack, slow fall, like a real needle
-  inLvl += (mic - inLvl) * (mic > inLvl ? 0.5 : 0.08);
-  outLvl += (out - outLvl) * (out > outLvl ? 0.5 : 0.08);
-  needle($("vu-in"), inLvl, "IN");
-  needle($("vu-out"), outLvl, "OUT");
-  $("mouth").textContent = "M" + face.draw(out, dt);
-  if (holding) $("timer").textContent = ((now - recStart) / 1000).toFixed(1);
+  mic += (m - mic) * (m > mic ? 0.5 : 0.1);
+  $("ring").style.setProperty("--mic", String(1 + mic * 0.25));
+  face.draw(voice.level(), dt);
+  if (holding) $("timer").textContent = `${((now - recStart) / 1000).toFixed(1)}s`;
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-
-log("VP-82 ready. Hold the red button or Space and talk. Say \"play a game\" if you dare.", "sys");
-(window).vox = { brain, voice, queue, handle };
+refreshState();
+window.vox = { brain, voice, queue, handle, face };

@@ -1,84 +1,121 @@
-// The on-screen host: a chunky pixel character drawn on a canvas each frame.
-// Mouth opening follows output amplitude (four shapes), the eyes blink on a
-// random timer and look toward the speaker when listening, and the eyebrows
-// jump on a punchline sting.
-
-const INK = "#1c1b18", PAPER = "#efe9dc", AMBER = "#ffb000", SKIN = "#d9a066", SHADE = "#b47b45";
+// The host: a soft, squishy gradient blob drawn on a canvas each frame.
+// It breathes when idle, leans in and widens its eyes while listening, wobbles
+// while thinking, and its mouth opens with the output amplitude while talking.
+// Eyebrows aren't a thing for blobs, so punchlines get a squash-and-stretch hop.
 
 export class Face {
   constructor(canvas) {
     this.c = canvas;
     this.g = canvas.getContext("2d");
-    this.level = 0;        // smoothed mouth opening 0..1
+    this.level = 0;
     this.blink = 0;
     this.nextBlink = 2;
-    this.brow = 0;         // eyebrow raise 0..1, decays
+    this.hop = 0;          // punchline bounce 0..1
     this.listening = false;
+    this.thinking = false;
     this.mood = "idle";    // idle | smug | shocked
     this.t = 0;
+    this.lookX = 0;
   }
 
-  punch(mood = "smug") { this.brow = 1; this.mood = mood; }
+  punch(mood = "smug") { this.hop = 1; this.mood = mood; }
 
-  /** Mouth shape from amplitude: closed, slit, open, wide "O". */
+  /** Mouth shape from amplitude: closed, small, open, wide. */
   static shape(level) { return level < 0.08 ? 0 : level < 0.25 ? 1 : level < 0.55 ? 2 : 3; }
 
   draw(amplitude, dt) {
     const { g, c } = this;
-    const P = Math.floor(Math.min(c.width / 48, c.height / 48)); // one art pixel
-    const ox = Math.floor((c.width - 48 * P) / 2), oy = Math.floor((c.height - 48 * P) / 2);
-    const px = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(ox + x * P, oy + y * P, w * P, h * P); };
+    const W = c.width, H = c.height;
     this.t += dt;
-    // attack fast, release slower: reads as speech instead of flicker
-    const k = amplitude > this.level ? 0.6 : 0.25;
+    const k = amplitude > this.level ? 0.55 : 0.2;
     this.level += (amplitude - this.level) * k;
-    this.brow = Math.max(0, this.brow - dt * 1.4);
-    if (this.brow === 0) this.mood = "idle";
+    this.hop = Math.max(0, this.hop - dt * 1.6);
+    if (this.hop === 0 && this.mood !== "idle") this.mood = "idle";
     this.nextBlink -= dt;
-    if (this.nextBlink <= 0) { this.blink = 0.14; this.nextBlink = 2 + Math.random() * 3; }
+    if (this.nextBlink <= 0) { this.blink = 0.13; this.nextBlink = 2.2 + Math.random() * 3; }
     this.blink = Math.max(0, this.blink - dt);
+    this.lookX += ((this.listening ? -0.12 : this.thinking ? Math.sin(this.t * 1.7) * 0.18 : 0) - this.lookX) * 0.08;
 
-    g.fillStyle = PAPER;
-    g.fillRect(0, 0, c.width, c.height);
-    // scanlines, like a CRT preview monitor
-    g.fillStyle = "rgba(0,0,0,.05)";
-    for (let y = 0; y < c.height; y += 3) g.fillRect(0, y, c.width, 1);
+    g.clearRect(0, 0, W, H);
+    const cx = W / 2, cy = H * 0.52, R = Math.min(W, H) * 0.3;
+    // squash and stretch: breathing, talking, and the punchline hop
+    const breathe = Math.sin(this.t * 2.2) * 0.025;
+    const hopY = -Math.sin(this.hop * Math.PI) * R * 0.35;
+    const sx = 1 + breathe + this.level * 0.06 + (this.hop > 0.6 ? 0.08 : 0);
+    const sy = 1 - breathe + this.level * 0.03 - (this.hop > 0.6 ? 0.06 : 0) + (this.listening ? 0.04 : 0);
+    const wob = this.thinking ? Math.sin(this.t * 6) * 0.06 : 0;
 
-    const bob = Math.round(Math.sin(this.t * 2) * 0.6 + this.level * 1.2);
-    // head
-    px(12, 8 + bob, 24, 30, INK);
-    px(13, 9 + bob, 22, 28, SKIN);
-    px(13, 31 + bob, 22, 6, SHADE);
-    // hair, headset band and mic
-    px(11, 6 + bob, 26, 6, INK);
-    px(10, 14 + bob, 3, 10, INK);
-    px(35, 14 + bob, 3, 10, INK);
-    px(8, 18 + bob, 3, 2, INK); px(8, 20 + bob, 2, 9, INK); px(9, 29 + bob, 6, 2, INK);
-    px(14, 29 + bob, 3, 2, this.level > 0.1 ? AMBER : "#7a6a4a"); // tally light on the mic
-    // eyes
-    const look = this.listening ? -1 : 0;
-    const eyeH = this.blink > 0 ? 1 : this.mood === "shocked" ? 5 : 4;
-    for (const ex of [17, 27]) {
-      px(ex, 18 + bob + (4 - eyeH), 4, eyeH, "#fff");
-      if (eyeH > 1) px(ex + 1 + look + (this.mood === "smug" ? 1 : 0), 19 + bob + (4 - eyeH) / 2, 2, 2, INK);
+    // soft shadow on the ground
+    g.fillStyle = "rgba(60,40,80,.12)";
+    g.beginPath();
+    g.ellipse(cx, cy + R * 1.08, R * (0.8 - this.hop * 0.25), R * 0.12, 0, 0, Math.PI * 2);
+    g.fill();
+
+    g.save();
+    g.translate(cx, cy + hopY);
+    g.rotate(wob);
+    g.scale(sx, sy);
+
+    // body: a slightly lumpy circle with little arm nubs
+    const grad = g.createLinearGradient(-R, -R, R, R);
+    grad.addColorStop(0, "#ffb38a");
+    grad.addColorStop(0.55, "#ff7a6b");
+    grad.addColorStop(1, "#e8508a");
+    g.fillStyle = grad;
+    g.beginPath();
+    const N = 48;
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const r = R * (1 + 0.025 * Math.sin(a * 3 + this.t * 1.5) + 0.015 * Math.sin(a * 5 - this.t));
+      const x = Math.cos(a) * r, y = Math.sin(a) * r * 0.96;
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
     }
-    // eyebrows: raised by the sting, tilted when smug
-    const by = 15 + bob - Math.round(this.brow * 3);
-    px(16, by + (this.mood === "smug" ? 1 : 0), 6, 1, INK);
-    px(26, by - (this.mood === "smug" ? 1 : 0), 6, 1, INK);
-    // nose
-    px(23, 23 + bob, 2, 3, SHADE);
-    // mouth
+    g.fill();
+    for (const side of [-1, 1]) {
+      const wave = side === 1 && this.level > 0.3 ? Math.sin(this.t * 10) * 0.25 : 0;
+      g.beginPath();
+      g.ellipse(side * R * 0.98, R * 0.25, R * 0.22, R * 0.16, side * (0.5 + wave), 0, Math.PI * 2);
+      g.fill();
+    }
+    // glossy highlight
+    const hl = g.createRadialGradient(-R * 0.35, -R * 0.45, 0, -R * 0.35, -R * 0.45, R * 0.8);
+    hl.addColorStop(0, "rgba(255,255,255,.55)");
+    hl.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = hl;
+    g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
+
+    // eyes: tall white ovals that squash to lines when blinking
+    const eyeH = this.blink > 0 ? 0.04 : this.mood === "shocked" ? 0.24 : this.listening ? 0.22 : 0.18;
+    const ex = R * this.lookX;
+    g.fillStyle = "#fff";
+    for (const side of [-1, 1]) {
+      g.beginPath();
+      const tilt = this.mood === "smug" ? side * 0.25 : 0;
+      g.ellipse(side * R * 0.28 + ex, -R * 0.18, R * 0.085, R * eyeH, tilt, 0, Math.PI * 2);
+      g.fill();
+    }
+    // mouth follows the voice
     const s = Face.shape(this.level);
-    const my = 28 + bob;
-    if (s === 0) px(19, my + 1, this.mood === "smug" ? 8 : 10, 1, INK);
-    else if (s === 1) { px(19, my, 10, 2, INK); px(20, my, 8, 1, "#7a2a20"); }
-    else if (s === 2) { px(19, my - 1, 10, 4, INK); px(20, my, 8, 2, "#7a2a20"); px(20, my, 8, 1, "#fff"); }
-    else { px(20, my - 2, 8, 6, INK); px(21, my - 1, 6, 4, "#7a2a20"); px(21, my - 1, 6, 1, "#fff"); }
-    // shoulders and shirt
-    px(8, 38, 32, 10, INK);
-    px(9, 39, 30, 9, "#3b4a5c");
-    px(22, 39, 4, 9, PAPER);
+    g.fillStyle = "#7a2343";
+    g.strokeStyle = "#7a2343";
+    g.lineWidth = R * 0.045;
+    g.lineCap = "round";
+    const my = R * 0.2;
+    if (s === 0) {
+      g.beginPath();
+      if (this.mood === "smug") { g.moveTo(-R * 0.12 + ex, my); g.quadraticCurveTo(ex, my + R * 0.06, R * 0.16 + ex, my - R * 0.04); }
+      else g.arc(ex, my - R * 0.04, R * 0.1, 0.2 * Math.PI, 0.8 * Math.PI);
+      g.stroke();
+    } else {
+      const w = [0, 0.1, 0.13, 0.15][s] * R, h = [0, 0.05, 0.1, 0.16][s] * R;
+      g.beginPath(); g.ellipse(ex, my + h * 0.3, w, h, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#ff9fb0";
+      g.beginPath(); g.ellipse(ex, my + h * 0.75, w * 0.6, h * 0.35, 0, 0, Math.PI * 2); g.fill();
+    }
+    // cheeks
+    g.fillStyle = "rgba(255,255,255,.22)";
+    for (const side of [-1, 1]) { g.beginPath(); g.ellipse(side * R * 0.5 + ex, R * 0.08, R * 0.1, R * 0.06, 0, 0, Math.PI * 2); g.fill(); }
+    g.restore();
     return s;
   }
 }
