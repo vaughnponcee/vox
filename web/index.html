@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VOX-CHAOS VP-82</title>
+<meta name="description" content="Hold-to-talk comedy voice processor. Neural TTS in the browser, zero-LLM joke brain.">
+<style>
+  :root{
+    --chassis:#262522;--chassis2:#1d1c1a;--plate:#e8e2d4;--plate2:#d9d1bf;--ink:#1c1b18;--mute:#6d675b;
+    --amber:#ffb000;--amber-dim:#5c4310;--lcd:#120e06;--red:#d23b2b;--green:#3fa34d;
+    --mono:"Cascadia Mono","Consolas","DejaVu Sans Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#151413;color:var(--ink);font:13px/1.35 var(--mono)}
+  body{display:grid;place-items:start center;padding:22px 12px 40px}
+  button,input,select{font:inherit;color:inherit}
+
+  .rack{width:min(1060px,100%);background:linear-gradient(#2c2a27,var(--chassis2));border-radius:6px;padding:14px;box-shadow:0 2px 0 #3a3834 inset,0 20px 50px #000a;position:relative}
+  .rack::before,.rack::after{content:"";position:absolute;top:10px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#8d877b,#3b3833);box-shadow:0 0 0 1px #111}
+  .rack::before{left:8px}.rack::after{right:8px}
+  .rail{display:flex;align-items:center;gap:16px;color:var(--plate);padding:2px 22px 12px;letter-spacing:.08em}
+  .brand{font-weight:700;font-size:16px}
+  .brand small{color:#a39c8c;font-weight:400;margin-left:8px;letter-spacing:.12em}
+  .led{width:9px;height:9px;border-radius:50%;background:#3a1a14;box-shadow:inset 0 1px 1px #000;display:inline-block;vertical-align:middle;margin-right:6px}
+  .led.on{background:var(--red);box-shadow:0 0 8px var(--red)}
+  .led.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+  .led.amb{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+  .grow{flex:1}
+  .readouts{display:flex;gap:14px;font-size:11.5px;color:#cfc7b5}
+  .readouts b{color:var(--amber);font-weight:400}
+
+  .panel{background:linear-gradient(var(--plate),var(--plate2));border-radius:3px;box-shadow:0 1px 0 #fff8 inset,0 -2px 0 #0002 inset,0 1px 2px #000a;padding:12px 14px;position:relative}
+  .label{font-size:10.5px;letter-spacing:.14em;color:var(--mute);margin:0 0 8px;display:flex;justify-content:space-between}
+  .top{display:grid;grid-template-columns:260px minmax(0,1fr) 230px;gap:10px}
+  #face{width:100%;aspect-ratio:1;display:block;background:var(--plate);border:3px solid var(--ink);border-radius:4px;image-rendering:pixelated}
+  .lcd{background:var(--lcd);border:3px solid var(--ink);border-radius:4px;height:236px;overflow:hidden;padding:10px 12px;color:var(--amber);font-size:13.5px;display:flex;flex-direction:column;justify-content:flex-end;gap:5px;box-shadow:inset 0 0 30px #000}
+  .lcd p{margin:0;text-shadow:0 0 6px #ffb00055;white-space:pre-wrap;word-break:break-word}
+  .lcd .you{color:#c98f15}
+  .lcd .you::before{content:"> "}
+  .lcd .vox::before{content:"< "}
+  .lcd .sys{color:var(--amber-dim)}
+  .lcd .tag{color:var(--amber-dim);font-size:11px;margin-left:6px}
+  .meters{display:grid;gap:8px}
+  canvas.meter{width:100%;height:96px;display:block;border:3px solid var(--ink);border-radius:4px;background:#f3ead0}
+
+  .controls{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:10px;margin-top:10px}
+  .c-lang{grid-column:span 5}.c-voice{grid-column:span 7}.c-fx{grid-column:span 4}.c-faders{grid-column:span 4}.c-sw{grid-column:span 4}
+  .seg{display:flex;flex-wrap:wrap;gap:4px}
+  .key{background:linear-gradient(#f7f3ea,#d6cfbf);border:1px solid #8a8374;border-bottom-width:3px;border-radius:3px;padding:6px 8px;cursor:pointer;font-size:11.5px;letter-spacing:.06em;min-width:44px}
+  .key:active{border-bottom-width:1px;transform:translateY(2px)}
+  .key[aria-pressed="true"]{background:linear-gradient(#3a3834,#262522);color:var(--amber);border-color:#111;box-shadow:0 0 0 1px #000 inset}
+  .pad{flex:1;padding:14px 6px;font-weight:700}
+  .pad.hot{background:linear-gradient(var(--amber),#d18f00);color:#111}
+  .fader{display:grid;grid-template-columns:62px 1fr 48px;align-items:center;gap:8px;margin-bottom:8px}
+  .fader output{text-align:right;color:var(--ink)}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:8px;background:#2a2825;border-radius:2px;box-shadow:inset 0 1px 2px #000}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:26px;border-radius:2px;background:linear-gradient(#f5f1e7,#bdb5a3);border:1px solid #555;box-shadow:0 2px 2px #0006}
+  input[type=range]::-moz-range-thumb{width:16px;height:26px;border-radius:2px;background:linear-gradient(#f5f1e7,#bdb5a3);border:1px solid #555}
+  .switch{display:flex;align-items:center;gap:10px;margin-bottom:9px;cursor:pointer;user-select:none}
+  .switch input{display:none}
+  .toggle{width:34px;height:18px;border-radius:9px;background:#2a2825;position:relative;box-shadow:inset 0 1px 2px #000;flex:none}
+  .toggle::after{content:"";position:absolute;left:2px;top:2px;width:14px;height:14px;border-radius:50%;background:linear-gradient(#f5f1e7,#a9a190);transition:left .12s}
+  .switch input:checked+.toggle{background:#5a4510}
+  .switch input:checked+.toggle::after{left:18px;background:linear-gradient(#ffd36b,var(--amber))}
+  .url{width:100%;background:#fffbf2;border:1px solid #8a8374;border-radius:3px;padding:5px 7px;font-size:12px}
+
+  .talk{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;margin-top:10px;align-items:stretch}
+  #ptt{height:96px;border-radius:6px;border:3px solid var(--ink);border-bottom-width:8px;background:linear-gradient(#e44a37,#a82b1d);color:#fff;font-size:22px;font-weight:700;letter-spacing:.18em;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 2px 0 #fff4 inset}
+  #ptt.down{border-bottom-width:3px;transform:translateY(5px);background:linear-gradient(#ff6a52,#c33421);box-shadow:0 0 30px #e44a3766}
+  #ptt:disabled{filter:grayscale(.7);cursor:not-allowed}
+  .rec{display:grid;align-content:center;gap:4px;text-align:center;background:var(--lcd);color:var(--amber);border:3px solid var(--ink);border-radius:6px;font-size:28px}
+  .rec small{font-size:10.5px;color:var(--amber-dim);letter-spacing:.14em}
+  .textrow{display:none;gap:8px;margin-top:10px}
+  body.text-mode .textrow{display:flex}
+  .textrow input{flex:1;background:var(--lcd);color:var(--amber);border:3px solid var(--ink);border-radius:4px;padding:10px 12px;font-size:15px;outline:none}
+  .foot{color:#8a8374;font-size:11px;margin-top:12px;padding:0 6px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .foot a{color:#c9c1ae}
+  .note{color:var(--red)}
+  @media (max-width:860px){
+    .top{grid-template-columns:1fr}
+    #face{max-width:280px;margin:0 auto}
+    .lcd{height:190px}
+    .meters{grid-template-columns:1fr 1fr}
+    .controls>div{grid-column:span 12}
+    .talk{grid-template-columns:1fr}
+    .rail .readouts{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="rack">
+  <div class="rail">
+    <span class="brand">VOX-CHAOS<small>VP-82 COMEDY VOICE PROCESSOR</small></span>
+    <span class="grow"></span>
+    <div class="readouts">
+      <span><span class="led" id="led-engine"></span>ENGINE <b id="r-engine">NATIVE</b></span>
+      <span>BRAIN <b id="r-brain">HYBRID</b></span>
+      <span>LAYER <b id="r-layer">---</b></span>
+      <span>THINK <b id="r-ms">---</b></span>
+      <span>VOICE <b id="r-tts">---</b></span>
+    </div>
+  </div>
+
+  <div class="top">
+    <div class="panel"><p class="label"><span>MONITOR</span><span id="mouth">M0</span></p><canvas id="face" width="288" height="288"></canvas></div>
+    <div class="panel"><p class="label"><span>TRANSCRIPT</span><span id="lang-read">EN</span></p><div class="lcd" id="lcd"></div></div>
+    <div class="panel meters">
+      <p class="label" style="margin:0"><span>LEVELS</span><span>dBFS</span></p>
+      <canvas class="meter" id="vu-in" width="440" height="180"></canvas>
+      <canvas class="meter" id="vu-out" width="440" height="180"></canvas>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="panel c-lang"><p class="label"><span>LANGUAGE</span><span>STT + TTS</span></p><div class="seg" id="langs"></div></div>
+    <div class="panel c-voice"><p class="label"><span>VOICE</span><span id="voice-note">KOKORO-82M</span></p><div class="seg" id="voices"></div></div>
+    <div class="panel c-fx"><p class="label"><span>STINGS</span><span>MANUAL FIRE</span></p>
+      <div class="seg"><button class="key pad" data-sting="boom">BOOM</button><button class="key pad" data-sting="crickets">CRICKETS</button><button class="key pad" data-sting="rimshot">RIMSHOT</button></div>
+    </div>
+    <div class="panel c-faders"><p class="label"><span>PROCESSOR</span><span></span></p>
+      <label class="fader"><span>PITCH</span><input type="range" id="pitch" min="-8" max="8" step="1" value="0"><output id="pitch-v">0 st</output></label>
+      <label class="fader"><span>SPEED</span><input type="range" id="speed" min="0.6" max="1.8" step="0.05" value="1"><output id="speed-v">1.00x</output></label>
+    </div>
+    <div class="panel c-sw"><p class="label"><span>MODE</span><span></span></p>
+      <label class="switch"><input type="checkbox" id="sw-neural" checked><span class="toggle"></span>NEURAL VOICE (KOKORO)</label>
+      <label class="switch"><input type="checkbox" id="sw-text"><span class="toggle"></span>TEXT INPUT (NO MIC)</label>
+      <label class="switch"><input type="checkbox" id="sw-traps" checked><span class="toggle"></span>AUTO TRAPS</label>
+      <label class="switch"><input type="checkbox" id="sw-llm"><span class="toggle"></span>LOCAL LLM</label>
+      <input class="url" id="llm-url" value="http://localhost:8080/v1" spellcheck="false" aria-label="LLM endpoint">
+    </div>
+  </div>
+
+  <div class="talk">
+    <button id="ptt" aria-label="Hold to talk">HOLD TO TALK</button>
+    <div class="rec"><span id="timer">0.0</span><small id="rec-state">STANDBY / SPACE</small></div>
+  </div>
+  <div class="textrow"><input id="text" placeholder="type and press Enter" autocomplete="off"></div>
+</div>
+<div class="foot">
+  <span id="note"></span>
+  <span>Kokoro-82M (Apache-2.0) and the joke brain run in this tab. <a href="https://github.com/vaughnponcee/vox-chaos">source</a></span>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>

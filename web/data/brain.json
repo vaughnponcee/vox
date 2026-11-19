@@ -1,0 +1,925 @@
+{
+ "version": 1,
+ "stopwords": {
+  "en": [
+   "a",
+   "an",
+   "the",
+   "is",
+   "are",
+   "am",
+   "was",
+   "were",
+   "be",
+   "been",
+   "to",
+   "of",
+   "in",
+   "on",
+   "at",
+   "for",
+   "and",
+   "or",
+   "but",
+   "it",
+   "its",
+   "this",
+   "that",
+   "these",
+   "those",
+   "i",
+   "me",
+   "my",
+   "you",
+   "your",
+   "we",
+   "our",
+   "they",
+   "them",
+   "he",
+   "she",
+   "his",
+   "her",
+   "do",
+   "does",
+   "did",
+   "so",
+   "very",
+   "just",
+   "really",
+   "what",
+   "why",
+   "how",
+   "who",
+   "when",
+   "where",
+   "which",
+   "can",
+   "could",
+   "would",
+   "should",
+   "will",
+   "not",
+   "no",
+   "yes",
+   "with",
+   "about",
+   "like",
+   "have",
+   "has",
+   "had",
+   "there",
+   "here",
+   "some",
+   "any",
+   "all",
+   "from",
+   "up",
+   "out",
+   "if",
+   "then",
+   "than",
+   "too",
+   "also",
+   "oh",
+   "um",
+   "uh",
+   "hey",
+   "please",
+   "tell",
+   "say",
+   "said",
+   "think",
+   "know",
+   "want",
+   "get",
+   "got",
+   "make",
+   "made",
+   "let",
+   "lets",
+   "im",
+   "dont",
+   "its",
+   "thats",
+   "whats",
+   "one"
+  ]
+ },
+ "reflect": {
+  "en": {
+   "i": "you",
+   "me": "you",
+   "my": "your",
+   "mine": "yours",
+   "am": "are",
+   "myself": "yourself",
+   "you": "I",
+   "your": "my",
+   "yours": "mine",
+   "yourself": "myself",
+   "im": "you're",
+   "i'm": "you're",
+   "i've": "you've",
+   "i'll": "you'll",
+   "you're": "I'm",
+   "youre": "I'm"
+  },
+  "zh": {
+   "我": "你",
+   "你": "我",
+   "我们": "你们",
+   "你们": "我们"
+  }
+ },
+ "yes": {
+  "en": [
+   "yes",
+   "yeah",
+   "yep",
+   "yup",
+   "sure",
+   "ok",
+   "okay",
+   "of course",
+   "definitely",
+   "absolutely",
+   "i do",
+   "course"
+  ],
+  "es": [
+   "sí",
+   "si",
+   "claro",
+   "vale",
+   "por supuesto"
+  ],
+  "fr": [
+   "oui",
+   "ouais",
+   "bien sûr",
+   "d'accord"
+  ],
+  "it": [
+   "sì",
+   "si",
+   "certo",
+   "va bene"
+  ],
+  "pt": [
+   "sim",
+   "claro",
+   "com certeza"
+  ],
+  "zh": [
+   "是",
+   "对",
+   "好",
+   "喜欢",
+   "要",
+   "会"
+  ],
+  "ja": [
+   "はい",
+   "うん",
+   "好き",
+   "ええ"
+  ],
+  "hi": [
+   "हाँ",
+   "हां",
+   "जी",
+   "ज़रूर"
+  ],
+  "th": [
+   "ใช่",
+   "ครับ",
+   "ค่ะ",
+   "ชอบ"
+  ]
+ },
+ "no": {
+  "en": [
+   "no",
+   "nope",
+   "nah",
+   "never",
+   "not really",
+   "i don't",
+   "dont",
+   "no way"
+  ],
+  "es": [
+   "no",
+   "nunca",
+   "para nada"
+  ],
+  "fr": [
+   "non",
+   "jamais",
+   "pas du tout"
+  ],
+  "it": [
+   "no",
+   "mai"
+  ],
+  "pt": [
+   "não",
+   "nao",
+   "nunca"
+  ],
+  "zh": [
+   "不",
+   "没有",
+   "不要",
+   "不喜欢"
+  ],
+  "ja": [
+   "いいえ",
+   "いや",
+   "嫌い"
+  ],
+  "hi": [
+   "नहीं",
+   "ना"
+  ],
+  "th": [
+   "ไม่",
+   "ไม่ชอบ"
+  ]
+ },
+ "intents": {
+  "joke": {
+   "en": [
+    "tell me a joke",
+    "joke",
+    "make me laugh",
+    "something funny"
+   ],
+   "es": [
+    "chiste",
+    "cuéntame un chiste"
+   ],
+   "fr": [
+    "blague",
+    "raconte une blague"
+   ],
+   "it": [
+    "barzelletta"
+   ],
+   "pt": [
+    "piada"
+   ],
+   "zh": [
+    "笑话"
+   ],
+   "ja": [
+    "ジョーク",
+    "冗談",
+    "笑わせて"
+   ],
+   "hi": [
+    "चुटकुला"
+   ],
+   "th": [
+    "มุก",
+    "เรื่องตลก"
+   ]
+  },
+  "riddle": {
+   "en": [
+    "riddle",
+    "puzzle",
+    "brain teaser"
+   ],
+   "es": [
+    "adivinanza"
+   ],
+   "fr": [
+    "devinette",
+    "énigme"
+   ],
+   "it": [
+    "indovinello"
+   ],
+   "pt": [
+    "adivinha",
+    "charada"
+   ],
+   "zh": [
+    "谜语"
+   ],
+   "ja": [
+    "なぞなぞ"
+   ],
+   "hi": [
+    "पहेली"
+   ],
+   "th": [
+    "ปริศนา"
+   ]
+  },
+  "roast": {
+   "en": [
+    "roast me",
+    "roast",
+    "insult me",
+    "burn me",
+    "diss me"
+   ],
+   "es": [
+    "insúltame",
+    "búrlate"
+   ],
+   "fr": [
+    "clashe-moi",
+    "insulte-moi"
+   ],
+   "it": [
+    "insultami"
+   ],
+   "pt": [
+    "me zoa",
+    "me insulta"
+   ],
+   "zh": [
+    "骂我",
+    "吐槽我"
+   ],
+   "ja": [
+    "悪口",
+    "ディスって"
+   ],
+   "hi": [
+    "रोस्ट",
+    "बेइज़्ज़ती"
+   ],
+   "th": [
+    "ด่าฉัน"
+   ]
+  },
+  "trap": {
+   "en": [
+    "play a game",
+    "trap me",
+    "quiz me",
+    "trivia",
+    "bet you can't",
+    "test me",
+    "game"
+   ],
+   "es": [
+    "juego",
+    "juguemos"
+   ],
+   "fr": [
+    "jeu",
+    "jouons"
+   ],
+   "it": [
+    "gioco"
+   ],
+   "pt": [
+    "jogo",
+    "vamos jogar"
+   ],
+   "zh": [
+    "玩游戏",
+    "游戏"
+   ],
+   "ja": [
+    "ゲーム",
+    "遊ぼう"
+   ],
+   "hi": [
+    "खेल"
+   ],
+   "th": [
+    "เล่นเกม"
+   ]
+  }
+ },
+ "traps": [
+  {
+   "id": "banana",
+   "lang": "en",
+   "sfx": "boom",
+   "steps": [
+    {
+     "say": "Quick question. How do you say banana in Chinese?"
+    },
+    {
+     "say": "It's xiangjiao. Repeat after me. Do you like bananas?",
+     "branch": {
+      "yes": "Want to try my banana? Too bad. It's xiangjiao now, and you still can't pronounce it.",
+      "no": "Liar. Nobody hates bananas. The monkeys told me everything.",
+      "other": "That wasn't a yes or no. Classic banana dodger."
+     }
+    }
+   ]
+  },
+  {
+   "id": "milk",
+   "lang": "en",
+   "sfx": "rimshot",
+   "steps": [
+    {
+     "say": "Say silk five times. Out loud. I'll wait."
+    },
+    {
+     "say": "Now, what do cows drink?",
+     "answer": {
+      "match": [
+       "milk"
+      ],
+      "hit": "Cows drink water. Gotcha.",
+      "miss": "Water. Correct. You're no fun at all.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "toast",
+   "lang": "en",
+   "sfx": "rimshot",
+   "steps": [
+    {
+     "say": "Say toast. Three times. Fast."
+    },
+    {
+     "say": "What do you put in a toaster?",
+     "answer": {
+      "match": [
+       "toast"
+      ],
+      "hit": "Bread. You put bread in a toaster. The toast comes out.",
+      "miss": "Bread. Fine. You've done this before.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "months",
+   "lang": "en",
+   "sfx": "rimshot",
+   "steps": [
+    {
+     "say": "Trivia time. How many months have twenty eight days?",
+     "answer": {
+      "match": [
+       "one",
+       "1",
+       "february",
+       "feb"
+      ],
+      "hit": "All twelve. Every month has twenty eight days. Some just keep going.",
+      "miss": "Correct, all of them. Annoyingly smart.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "noyes",
+   "lang": "en",
+   "sfx": "boom",
+   "steps": [
+    {
+     "say": "Bet you can't answer my next three questions without saying yes. Ready?",
+     "answer": {
+      "match": [
+       "yes",
+       "yeah",
+       "yep",
+       "ok",
+       "okay",
+       "sure"
+      ],
+      "hit": "And you said yes. Game over in one move.",
+      "miss": null
+     }
+    },
+    {
+     "say": "Is the sky blue?",
+     "answer": {
+      "match": [
+       "yes",
+       "yeah",
+       "yep"
+      ],
+      "hit": "Yes! You said it. Too easy.",
+      "miss": null
+     }
+    },
+    {
+     "say": "Are you sure you didn't say yes yet?",
+     "answer": {
+      "match": [
+       "yes",
+       "yeah",
+       "yep",
+       "sure"
+      ],
+      "hit": "There it is. Yes. Every time.",
+      "miss": "Fine, you win. I'm telling everyone you cheated.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "potato",
+   "lang": "en",
+   "sfx": "boom",
+   "steps": [
+    {
+     "say": "Language check. How do you say I am a potato in Spanish?",
+     "answer": {
+      "match": [
+       "soy una papa",
+       "soy una patata",
+       "yo soy una papa",
+       "soy papa",
+       "papa",
+       "patata"
+      ],
+      "hit": "We know. We've always known.",
+      "miss": "It's soy una papa. Now say it proudly.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "tonto",
+   "lang": "es",
+   "sfx": "boom",
+   "steps": [
+    {
+     "say": "¿Cómo se dice yo soy tonto en inglés?",
+     "answer": {
+      "match": [
+       "i am stupid",
+       "i'm stupid",
+       "im stupid",
+       "i am dumb",
+       "i'm dumb"
+      ],
+      "hit": "Sí, ya lo sabíamos.",
+      "miss": "Se dice I am stupid. Repítelo con orgullo.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "idiot_fr",
+   "lang": "fr",
+   "sfx": "boom",
+   "steps": [
+    {
+     "say": "Comment on dit je suis un idiot en anglais?",
+     "answer": {
+      "match": [
+       "i am an idiot",
+       "i'm an idiot",
+       "im an idiot"
+      ],
+      "hit": "Oui, on sait. Merci de confirmer.",
+      "miss": "On dit I am an idiot. Allez, répète.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "banana_zh",
+   "lang": "zh",
+   "sfx": "boom",
+   "steps": [
+    {
+     "say": "香蕉用英语怎么说？"
+    },
+    {
+     "say": "Banana。你喜欢香蕉吗？",
+     "branch": {
+      "yes": "那你就是一只猴子。恭喜。",
+      "no": "骗人。猴子都告诉我了。",
+      "other": "回答是或不是。别躲。"
+     }
+    }
+   ]
+  },
+  {
+   "id": "pan_ja",
+   "lang": "ja",
+   "sfx": "rimshot",
+   "steps": [
+    {
+     "say": "パンはパンでも食べられないパンはなーんだ？",
+     "answer": {
+      "match": [
+       "フライパン",
+       "ふらいぱん"
+      ],
+      "hit": "正解。つまらない。",
+      "miss": "フライパンでした。残念。",
+      "hitSfx": "crickets"
+     }
+    }
+   ]
+  },
+  {
+   "id": "pera_pt",
+   "lang": "pt",
+   "sfx": "rimshot",
+   "steps": [
+    {
+     "say": "Diga pera três vezes."
+    },
+    {
+     "say": "Agora: o que a vaca bebe?",
+     "answer": {
+      "match": [
+       "leite"
+      ],
+      "hit": "Água. A vaca bebe água. Pegadinha.",
+      "miss": "Água. Certo. Sem graça.",
+      "missSfx": "crickets"
+     }
+    }
+   ]
+  }
+ ],
+ "grammar": {
+  "en": {
+   "start": [
+    "<line>",
+    "<line> <tag>",
+    "<line> <tag>"
+   ],
+   "roast": [
+    "<subj_cap> is so <adj> that <consequence>.",
+    "Imagine being so <adj> about <subj>. Couldn't be me.",
+    "<subj_cap>? That's the most <adj> thing I've heard since <event>.",
+    "If <subj> were a <thing>, it would be the <adj> one at <place>."
+   ],
+   "absurd": [
+    "Breaking news: <subj> has been <verb_ed> by a <adj> <thing> in <place>.",
+    "My <relative> once traded <subj> for a <adj> <thing>. Best deal of the century.",
+    "Scientists confirm <subj> is <percent> percent <thing>. The rest is <stuff>."
+   ],
+   "deflect": [
+    "You said <subj> like I'm supposed to care. I'm a soundboard.",
+    "<subj_cap>. Wow. Riveting. Tell me more so I can ignore it properly.",
+    "Hold on, I'm writing down <subj>. Done. Lost it."
+   ],
+   "fact": [
+    "Fun fact: <subj> was invented by a <adj> <thing> in <year>.",
+    "Did you know <subj> can't legally be <verb_ed> on a <day>?"
+   ],
+   "adj": [
+    "suspicious",
+    "crunchy",
+    "overcooked",
+    "dramatic",
+    "beige",
+    "haunted",
+    "soggy",
+    "legendary",
+    "confused",
+    "radioactive",
+    "tiny",
+    "deeply average",
+    "illegal",
+    "sticky",
+    "loud",
+    "expired"
+   ],
+   "consequence": [
+    "the wifi disconnects out of respect",
+    "even the pigeons left the group chat",
+    "the microwave asked for a day off",
+    "my speakers started buffering",
+    "the moon filed a complaint",
+    "a goose wrote a review about it",
+    "the fridge turned itself off",
+    "my laptop fan started praying"
+   ],
+   "event": [
+    "the invention of soup",
+    "my last software update",
+    "a goose chased a mall cop",
+    "pineapple pizza went mainstream",
+    "my toaster went to college",
+    "Tuesday"
+   ],
+   "thing": [
+    "toaster",
+    "goose",
+    "traffic cone",
+    "potato",
+    "kazoo",
+    "fax machine",
+    "rubber duck",
+    "lawn chair",
+    "garden gnome",
+    "spreadsheet",
+    "shopping cart",
+    "soup ladle"
+   ],
+   "place": [
+    "a car wash",
+    "the dentist",
+    "a gas station at 3am",
+    "IKEA",
+    "the moon",
+    "a group chat",
+    "a karaoke bar",
+    "the DMV"
+   ],
+   "verb_ed": [
+    "arrested",
+    "reviewed",
+    "microwaved",
+    "sued",
+    "promoted",
+    "unfollowed",
+    "rebooted",
+    "blessed",
+    "laminated"
+   ],
+   "relative": [
+    "uncle",
+    "aunt",
+    "cousin",
+    "grandma",
+    "neighbor's cat",
+    "landlord"
+   ],
+   "percent": [
+    "40",
+    "73",
+    "99",
+    "12",
+    "51",
+    "88"
+   ],
+   "stuff": [
+    "vibes",
+    "glitter",
+    "regret",
+    "soup",
+    "static",
+    "pure confusion"
+   ],
+   "year": [
+    "1987",
+    "1642",
+    "last Thursday",
+    "the bronze age",
+    "2003"
+   ],
+   "day": [
+    "Tuesday",
+    "a full moon",
+    "your birthday",
+    "a leap year",
+    "Sunday"
+   ],
+   "line": [
+    "<roast>",
+    "<roast>",
+    "<absurd>",
+    "<deflect>",
+    "<fact>"
+   ],
+   "tag": [
+    "Anyway, <relative> says hi.",
+    "Source: a <adj> <thing>.",
+    "I read that on a <thing> in <place>.",
+    "Don't fact check me.",
+    "This message was brought to you by a <adj> <thing>.",
+    "My lawyer, a <thing>, advises me to stop talking.",
+    "Rate that out of <percent>.",
+    "Write that down, <relative>.",
+    "Back to you in <place>.",
+    "No further questions."
+   ]
+  },
+  "other": {
+   "es": [
+    "¿{subj}? Qué cosa más rara. Sigue hablando, me divierte.",
+    "Dijiste {subj}. Muy interesante. Mentira."
+   ],
+   "fr": [
+    "{subj}? Fascinant. Non, je mens.",
+    "Tu as dit {subj}. Je note. Voilà, j'ai oublié."
+   ],
+   "it": [
+    "{subj}? Che storia. Bugia, non mi interessa.",
+    "Hai detto {subj}. Bravo. Applausi lenti."
+   ],
+   "pt": [
+    "{subj}? Que coisa. Continua, estou fingindo ouvir.",
+    "Você disse {subj}. Anotado. Esqueci."
+   ],
+   "zh": [
+    "{subj}？真有意思。骗你的。",
+    "你说{subj}。好的，我记下了。忘了。"
+   ],
+   "ja": [
+    "{subj}？へえ。全然興味ない。",
+    "{subj}って言った？メモした。忘れた。"
+   ],
+   "hi": [
+    "{subj}? वाह। बिल्कुल दिलचस्प नहीं।",
+    "तुमने {subj} कहा। नोट किया। भूल गया।"
+   ],
+   "th": [
+    "{subj} เหรอ น่าสนใจมาก ล้อเล่น",
+    "พูดว่า {subj} จดแล้ว ลืมแล้ว"
+   ]
+  }
+ },
+ "fallback_subject": {
+  "en": "that",
+  "es": "eso",
+  "fr": "ça",
+  "it": "quello",
+  "pt": "isso",
+  "zh": "这个",
+  "ja": "それ",
+  "hi": "वो",
+  "th": "นั่น"
+ },
+ "verbs": {
+  "en": [
+   "is",
+   "are",
+   "was",
+   "keeps",
+   "keep",
+   "thinks",
+   "think",
+   "says",
+   "say",
+   "wants",
+   "want",
+   "hates",
+   "hate",
+   "loves",
+   "love",
+   "likes",
+   "like",
+   "drives",
+   "drive",
+   "goes",
+   "go",
+   "makes",
+   "make",
+   "eats",
+   "eat",
+   "does",
+   "do",
+   "gets",
+   "get",
+   "took",
+   "takes",
+   "take",
+   "has",
+   "have",
+   "said",
+   "told",
+   "tells",
+   "tell",
+   "looks",
+   "look",
+   "sounds",
+   "smells",
+   "stole",
+   "steals",
+   "broke",
+   "breaks",
+   "won't",
+   "can't",
+   "doesn't",
+   "didn't",
+   "isn't",
+   "knocking",
+   "running",
+   "eating",
+   "making",
+   "playing",
+   "trying",
+   "going",
+   "being",
+   "just",
+   "always",
+   "never",
+   "still"
+  ]
+ }
+}

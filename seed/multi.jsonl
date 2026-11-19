@@ -1,0 +1,29 @@
+{"kind":"joke","lang":"es","prompt":"¿Qué le dice un pez a otro pez?","response":"Nada.","tags":["pez","animal"]}
+{"kind":"joke","lang":"es","prompt":"¿Por qué el libro de matemáticas está triste?","response":"Porque tiene muchos problemas.","tags":["escuela","matematicas"]}
+{"kind":"joke","lang":"es","prompt":"¿Qué hace una abeja en el gimnasio?","response":"Zum-ba.","tags":["abeja","deporte"]}
+{"kind":"riddle","lang":"es","prompt":"Blanco por dentro, verde por fuera. Si quieres que te lo diga, espera.","response":"La pera.","tags":["fruta"]}
+{"kind":"roast","lang":"es","prompt":"insúltame","response":"Eres como un lunes: nadie te pidió.","tags":["roast"]}
+{"kind":"qa","lang":"es","prompt":"hola","response":"Hola. Di algo gracioso o lo hago yo.","tags":["saludo"]}
+{"kind":"joke","lang":"fr","prompt":"Que dit un escargot quand il croise une limace?","response":"Oh, un naturiste.","tags":["animal"]}
+{"kind":"joke","lang":"fr","prompt":"Pourquoi les plongeurs plongent-ils toujours en arrière?","response":"Parce que sinon ils tombent dans le bateau.","tags":["mer","sport"]}
+{"kind":"riddle","lang":"fr","prompt":"Qu'est-ce qui a des dents mais ne mange jamais?","response":"Un peigne.","tags":["maison"]}
+{"kind":"roast","lang":"fr","prompt":"clashe-moi","response":"Tu es comme un lundi matin: personne ne t'a demandé.","tags":["roast"]}
+{"kind":"qa","lang":"fr","prompt":"bonjour","response":"Bonjour. Dis un truc drôle, ou je m'en charge.","tags":["salut"]}
+{"kind":"joke","lang":"it","prompt":"Qual è il colmo per un elettricista?","response":"Non fare scintille a scuola.","tags":["lavoro"]}
+{"kind":"riddle","lang":"it","prompt":"Più è grande, meno si vede. Cos'è?","response":"Il buio.","tags":["notte"]}
+{"kind":"qa","lang":"it","prompt":"ciao","response":"Ciao. Dimmi qualcosa di divertente, o ci penso io.","tags":["saluto"]}
+{"kind":"joke","lang":"pt","prompt":"O que o pato disse para a pata?","response":"Vem quá.","tags":["animal"]}
+{"kind":"riddle","lang":"pt","prompt":"O que é, o que é: quanto mais se tira, maior fica?","response":"O buraco.","tags":["adivinha"]}
+{"kind":"qa","lang":"pt","prompt":"olá","response":"Olá. Diz alguma coisa engraçada, ou digo eu.","tags":["saudação"]}
+{"kind":"joke","lang":"zh","prompt":"为什么数学书总是很伤心？","response":"因为它有太多问题。","tags":["学校","数学"]}
+{"kind":"joke","lang":"zh","prompt":"什么动物最容易摔跤？","response":"狐狸，因为它很狡猾（脚滑）。","tags":["动物","谐音"]}
+{"kind":"riddle","lang":"zh","prompt":"什么东西越洗越脏？","response":"水。","tags":["谜语"]}
+{"kind":"qa","lang":"zh","prompt":"你好","response":"你好。快说点好笑的，不然我来。","tags":["问候"]}
+{"kind":"joke","lang":"ja","prompt":"布団が吹っ飛んだ。","response":"ダジャレです。笑ってください。","tags":["ダジャレ"]}
+{"kind":"riddle","lang":"ja","prompt":"パンはパンでも食べられないパンはなに？","response":"フライパン。","tags":["なぞなぞ","パン"]}
+{"kind":"qa","lang":"ja","prompt":"こんにちは","response":"こんにちは。面白いこと言って。言わないなら僕が言う。","tags":["あいさつ"]}
+{"kind":"joke","lang":"hi","prompt":"टीचर: तुम्हारा होमवर्क कहाँ है?","response":"छात्र: वो तो कुत्ता खा गया, और कुत्ता भी अब होमवर्क से परेशान है।","tags":["स्कूल"]}
+{"kind":"riddle","lang":"hi","prompt":"ऐसी कौन सी चीज़ है जो सूखने पर गीली हो जाती है?","response":"तौलिया।","tags":["पहेली"]}
+{"kind":"qa","lang":"hi","prompt":"नमस्ते","response":"नमस्ते। कुछ मज़ेदार बोलो, वरना मैं बोलूँगा।","tags":["अभिवादन"]}
+{"kind":"riddle","lang":"th","prompt":"อะไรเอ่ย มีฟันแต่ไม่กินข้าว","response":"หวี","tags":["ปริศนา"]}
+{"kind":"qa","lang":"th","prompt":"สวัสดี","response":"สวัสดี พูดอะไรตลกๆ หน่อย ไม่งั้นฉันพูดเอง","tags":["ทักทาย"]}

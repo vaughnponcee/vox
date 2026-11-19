@@ -1,0 +1,36 @@
+{
+  "subject": [
+    {"text": "my cat keeps knocking cups off the table", "lang": "en", "want": "your cat"},
+    {"text": "my boss thinks I'm lazy", "lang": "en", "want": "your boss"},
+    {"text": "I hate homework", "lang": "en", "want": "homework"},
+    {"text": "tell me about the moon", "lang": "en", "want": "moon"},
+    {"text": "I'm so tired of my phone", "lang": "en", "want": "your phone"},
+    {"text": "what do you think", "lang": "en", "want": null},
+    {"text": "我的猫很胖", "lang": "zh", "want": "你的猫很胖"}
+  ],
+  "reflect": [
+    {"text": "my boss thinks I'm lazy", "lang": "en", "want": "your boss thinks you're lazy"},
+    {"text": "you stole my sandwich", "lang": "en", "want": "I stole your sandwich"},
+    {"text": "我喜欢你", "lang": "zh", "want": "你喜欢我"}
+  ],
+  "retrieval": [
+    {"text": "what is the meaning of life", "lang": "en", "contains": "Forty two"},
+    {"text": "I hate you", "lang": "en", "contains": "mildly inconvenienced"},
+    {"text": "hello", "lang": "en", "contains": "a human"},
+    {"text": "bonjour", "lang": "fr", "contains": "Dis un truc"},
+    {"text": "こんにちは", "lang": "ja", "contains": "面白い"}
+  ],
+  "traps": [
+    {"id": "banana", "lang": "en", "replies": ["xiangjiao?", "yes I do"], "final": "Want to try my banana", "sfx": "boom"},
+    {"id": "banana", "lang": "en", "replies": ["no idea", "nope"], "final": "Liar", "sfx": null},
+    {"id": "milk", "lang": "en", "replies": ["silk silk silk silk silk", "milk"], "final": "Cows drink water", "sfx": "rimshot"},
+    {"id": "milk", "lang": "en", "replies": ["fine", "water obviously"], "final": "no fun", "sfx": "crickets"},
+    {"id": "months", "lang": "en", "replies": ["just february"], "final": "All twelve", "sfx": "rimshot"},
+    {"id": "noyes", "lang": "en", "replies": ["nice try", "it is blue", "yeah"], "final": "There it is", "sfx": "boom"},
+    {"id": "noyes", "lang": "en", "replies": ["sure"], "final": "Game over", "sfx": "boom"},
+    {"id": "potato", "lang": "en", "replies": ["soy una papa"], "final": "We know", "sfx": "boom"},
+    {"id": "tonto", "lang": "es", "replies": ["I am stupid"], "final": "ya lo sabíamos", "sfx": "boom"},
+    {"id": "banana_zh", "lang": "zh", "replies": ["banana", "喜欢"], "final": "猴子", "sfx": "boom"},
+    {"id": "pan_ja", "lang": "ja", "replies": ["フライパン"], "final": "正解", "sfx": "crickets"}
+  ]
+}

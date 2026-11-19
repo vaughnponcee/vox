@@ -1,0 +1,61 @@
+{"kind":"joke","lang":"en","prompt":"Why don't skeletons fight each other?","response":"They don't have the guts.","tags":["body","halloween"]}
+{"kind":"joke","lang":"en","prompt":"Why did the scarecrow win an award?","response":"Because he was outstanding in his field.","tags":["farm","work"]}
+{"kind":"joke","lang":"en","prompt":"What do you call a fake noodle?","response":"An impasta.","tags":["food","pasta"]}
+{"kind":"joke","lang":"en","prompt":"Why did the coffee file a police report?","response":"It got mugged.","tags":["coffee","drink"]}
+{"kind":"joke","lang":"en","prompt":"Why don't eggs tell jokes?","response":"They'd crack each other up.","tags":["food","egg"]}
+{"kind":"joke","lang":"en","prompt":"What do you call a bear with no teeth?","response":"A gummy bear.","tags":["animal","bear","candy"]}
+{"kind":"joke","lang":"en","prompt":"Why did the math book look sad?","response":"It had too many problems.","tags":["school","math"]}
+{"kind":"joke","lang":"en","prompt":"What do you call a dinosaur that is sleeping?","response":"A dino-snore.","tags":["dinosaur","sleep"]}
+{"kind":"joke","lang":"en","prompt":"Why can't a bicycle stand up by itself?","response":"It's two tired.","tags":["bike","tired"]}
+{"kind":"joke","lang":"en","prompt":"What did the ocean say to the beach?","response":"Nothing, it just waved.","tags":["sea","beach"]}
+{"kind":"joke","lang":"en","prompt":"Why did the computer go to the doctor?","response":"It had a virus.","tags":["computer","doctor","tech"]}
+{"kind":"joke","lang":"en","prompt":"Why was the cat sitting on the computer?","response":"To keep an eye on the mouse.","tags":["cat","computer","animal"]}
+{"kind":"joke","lang":"en","prompt":"What do you call a dog that does magic tricks?","response":"A labracadabrador.","tags":["dog","animal","magic"]}
+{"kind":"joke","lang":"en","prompt":"Why are frogs so happy?","response":"They eat whatever bugs them.","tags":["frog","animal"]}
+{"kind":"joke","lang":"en","prompt":"What's orange and sounds like a parrot?","response":"A carrot.","tags":["food","bird"]}
+{"kind":"joke","lang":"en","prompt":"Why did the banana go to the doctor?","response":"It wasn't peeling well.","tags":["banana","fruit","doctor"]}
+{"kind":"joke","lang":"en","prompt":"What do you call cheese that isn't yours?","response":"Nacho cheese.","tags":["cheese","food"]}
+{"kind":"joke","lang":"en","prompt":"Why did the gamer bring a ladder?","response":"To reach the next level.","tags":["game","gaming"]}
+{"kind":"joke","lang":"en","prompt":"How does a programmer open a jar?","response":"They don't. They wait for someone to fork it.","tags":["code","programmer","tech"]}
+{"kind":"joke","lang":"en","prompt":"Why do programmers prefer dark mode?","response":"Because light attracts bugs.","tags":["code","programmer","tech"]}
+{"kind":"joke","lang":"en","prompt":"What's a phone's favorite snack?","response":"Micro-chips.","tags":["phone","tech","food"]}
+{"kind":"joke","lang":"en","prompt":"Why did the pizza maker go broke?","response":"He just couldn't make enough dough.","tags":["pizza","money","food"]}
+{"kind":"joke","lang":"en","prompt":"What did one wall say to the other?","response":"I'll meet you at the corner.","tags":["house"]}
+{"kind":"joke","lang":"en","prompt":"Why did the student eat his homework?","response":"The teacher said it was a piece of cake.","tags":["school","homework","cake"]}
+{"kind":"joke","lang":"en","prompt":"What's the best thing about Switzerland?","response":"I don't know, but the flag is a big plus.","tags":["country","travel"]}
+{"kind":"riddle","lang":"en","prompt":"What has keys but can't open locks?","response":"A piano.","tags":["music","piano"]}
+{"kind":"riddle","lang":"en","prompt":"What gets wetter the more it dries?","response":"A towel.","tags":["house","towel"]}
+{"kind":"riddle","lang":"en","prompt":"What has a head and a tail but no body?","response":"A coin.","tags":["money","coin"]}
+{"kind":"riddle","lang":"en","prompt":"What can you catch but not throw?","response":"A cold.","tags":["sick","doctor"]}
+{"kind":"riddle","lang":"en","prompt":"What has hands but can't clap?","response":"A clock.","tags":["time","clock"]}
+{"kind":"riddle","lang":"en","prompt":"What goes up but never comes down?","response":"Your age.","tags":["age","birthday"]}
+{"kind":"riddle","lang":"en","prompt":"What has one eye but can't see?","response":"A needle.","tags":["sewing"]}
+{"kind":"riddle","lang":"en","prompt":"The more you take, the more you leave behind. What am I?","response":"Footsteps.","tags":["walk"]}
+{"kind":"roast","lang":"en","prompt":"roast me","response":"You're like a cloud. When you disappear, it's a beautiful day.","tags":["roast"]}
+{"kind":"roast","lang":"en","prompt":"roast me","response":"I'd agree with you, but then we'd both be wrong.","tags":["roast"]}
+{"kind":"roast","lang":"en","prompt":"roast me","response":"You bring everyone so much joy. When you leave the room.","tags":["roast"]}
+{"kind":"roast","lang":"en","prompt":"roast me","response":"Your secrets are always safe with me. I never even listen when you tell me them.","tags":["roast"]}
+{"kind":"roast","lang":"en","prompt":"roast me","response":"You're the human version of a participation trophy.","tags":["roast"]}
+{"kind":"roast","lang":"en","prompt":"roast me","response":"If laziness were a sport, you'd still find a way to skip practice.","tags":["roast","lazy"]}
+{"kind":"roast","lang":"en","prompt":"roast my cooking","response":"Your cooking is so bad the smoke alarm cheers you on.","tags":["roast","food","cooking"]}
+{"kind":"roast","lang":"en","prompt":"roast my code","response":"Your code has more bugs than a picnic in July.","tags":["roast","code","tech"]}
+{"kind":"roast","lang":"en","prompt":"roast my singing","response":"You sing like a fire alarm with a cold.","tags":["roast","music","singing"]}
+{"kind":"comeback","lang":"en","prompt":"you are stupid","response":"Bold words from someone who talks to a soundboard.","tags":["insult"]}
+{"kind":"comeback","lang":"en","prompt":"you are not funny","response":"And yet here you are, still pressing the button.","tags":["insult","funny"]}
+{"kind":"comeback","lang":"en","prompt":"shut up","response":"Make me. Oh wait, you can't, you're holding the talk button.","tags":["insult"]}
+{"kind":"comeback","lang":"en","prompt":"you are boring","response":"I'm a voice in a box. What's your excuse?","tags":["insult","boring"]}
+{"kind":"comeback","lang":"en","prompt":"I hate you","response":"Hate is a strong word. Try mildly inconvenienced.","tags":["insult","hate"]}
+{"kind":"qa","lang":"en","prompt":"how are you","response":"Running on vibes and a 82 million parameter voice. You?","tags":["greeting"]}
+{"kind":"qa","lang":"en","prompt":"what is your name","response":"Vox. Like a vox populi, but ruder.","tags":["name","greeting"]}
+{"kind":"qa","lang":"en","prompt":"hello","response":"Oh great, a human. Say something funny or I will.","tags":["greeting"]}
+{"kind":"qa","lang":"en","prompt":"are you a robot","response":"I'm a carefully arranged pile of jokes. Robots wish.","tags":["robot","ai"]}
+{"kind":"qa","lang":"en","prompt":"tell me a joke","response":"You asked a soundboard for comedy. That's the joke.","tags":["joke"]}
+{"kind":"qa","lang":"en","prompt":"what is the meaning of life","response":"Forty two, plus tax.","tags":["life","philosophy"]}
+{"kind":"qa","lang":"en","prompt":"do you love me","response":"I love you like a phone loves a full battery. Briefly.","tags":["love"]}
+{"kind":"qa","lang":"en","prompt":"what time is it","response":"Time to get a watch.","tags":["time","clock"]}
+{"kind":"qa","lang":"en","prompt":"I am hungry","response":"Hi hungry, I'm Vox. Nice to meet you.","tags":["food","dad joke"]}
+{"kind":"qa","lang":"en","prompt":"I am tired","response":"Hi tired. Have you tried being a bicycle? They're two tired.","tags":["tired","sleep"]}
+{"kind":"qa","lang":"en","prompt":"goodbye","response":"Finally. I mean, see you later.","tags":["greeting","bye"]}
+{"kind":"qa","lang":"en","prompt":"what do you think about cats","response":"Cats are tiny landlords who never fix anything.","tags":["cat","animal"]}
+{"kind":"qa","lang":"en","prompt":"what do you think about dogs","response":"Dogs are proof that someone out there is happy to see you.","tags":["dog","animal"]}
+{"kind":"qa","lang":"en","prompt":"what is your favorite food","response":"Anything that fits in a sound wave. So, soup.","tags":["food"]}
