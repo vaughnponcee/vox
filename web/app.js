@@ -1,6 +1,7 @@
 // vox-chaos: push-to-talk, speech recognition, the brain, the audio queue,
 // voices, stings and the mascot, wired together.
-import { Brain } from "./brain.js";
+import { Brain, detectLang } from "./brain.js";
+import { Whisper, Recorder } from "./stt.js";
 import { AudioQueue, sentences } from "./queue.js";
 import { Voice, VOICES, LANGS } from "./voice.js";
 import { Face } from "./face.js";
@@ -20,7 +21,7 @@ const store = { get: (k) => { try { return localStorage.getItem(k); } catch { re
 let mode = store.get("vox.mode");
 let trapsOn = true, turnsSinceTrap = 0;
 let generation = null; // AbortController for the reply being generated
-let slowGPU = false;
+let slowGPU = false, slowStrikes = 0;
 const voice = new Voice();
 const face = new Face($("face"));
 let speaking = false;
@@ -67,7 +68,9 @@ $("cc").onclick = () => {
   $("cc").setAttribute("aria-pressed", String(on));
   document.body.classList.toggle("cc-off", !on);
 };
-$("stop").onclick = () => { generation?.abort(); queue.interrupt(); voice.nativeLevel = 0; if ("speechSynthesis" in window) speechSynthesis.cancel(); };
+function hush() { generation?.abort(); queue.interrupt(); voice.nativeLevel = 0; if ("speechSynthesis" in window) speechSynthesis.cancel(); }
+// the X ends the chat: stop everything, then choose a voice for the next one
+$("stop").onclick = () => { release(); hush(); thinking = false; brain.traps.active = null; openPicker(); };
 $("menu").onclick = () => openSheet(!$("sheet").classList.contains("open"));
 $("scrim").onclick = () => openSheet(false);
 const nice = (s) => s.charAt(0) + s.slice(1).toLowerCase();
@@ -77,15 +80,19 @@ for (const [code, l] of Object.entries(LANGS)) {
   b.className = "chip";
   b.textContent = nice(l.name);
   b.setAttribute("aria-pressed", String(code === lang));
-  b.onclick = () => {
-    lang = code;
-    document.querySelectorAll("#langs .chip").forEach((k) => k.setAttribute("aria-pressed", String(k === b)));
-    if (lang !== "en" && preset.engine === "kokoro") selectVoice(VOICES.find((v) => v.id === "polyglot"));
-    $("lang-label").textContent = b.textContent;
-    voice.preload(preset, lang);
-    show(`Now in ${b.textContent}. Go on, say something.`, "sys");
-  };
+  b.dataset.lang = code;
+  b.onclick = () => { setLang(code); show(`Now in ${b.textContent}. Go on, say something.`, "sys"); };
   $("langs").append(b);
+}
+/** Switch the reply language: captions, voice and the AI all follow. */
+function setLang(code) {
+  if (!LANGS[code]) return;
+  lang = code;
+  let label = code;
+  document.querySelectorAll("#langs .chip").forEach((k) => { const on = k.dataset.lang === code; k.setAttribute("aria-pressed", String(on)); if (on) label = k.textContent; });
+  if (lang !== "en" && preset.engine === "kokoro") selectVoice(VOICES.find((v) => v.id === "polyglot") ?? VOICES[0]);
+  $("lang-label").textContent = label;
+  voice.preload(preset, lang);
 }
 function selectVoice(v) {
   preset = v;
@@ -102,6 +109,51 @@ for (const v of VOICES) {
 }
 selectVoice(preset);
 
+// ---------------------------------------------------------------- choose a voice
+let pickIdx = 0, prevVoice = null;
+const vname = (v) => v.label.replace(/\s*\(.*\)$/, "");
+function renderPicker() {
+  const n = VOICES.length, at = (d) => VOICES[(pickIdx + d + n) % n];
+  const fill = (id, v) => { $(id).innerHTML = ""; $(id).append(vname(v)); const sm = document.createElement("small"); sm.textContent = v.desc ?? ""; $(id).append(sm); };
+  $("pv-name").textContent = vname(at(0));
+  $("pv-desc").textContent = at(0).desc ?? "";
+  fill("pv-prev-name", at(-1)); fill("pv-next-name", at(1));
+}
+function stepPicker(d) {
+  pickIdx = (pickIdx + d + VOICES.length) % VOICES.length;
+  renderPicker();
+  // hear it: a short line in the chosen voice
+  hush();
+  const v = VOICES[pickIdx];
+  selectVoice(v); voice.unlock();
+  if (v.engine === "kokoro") void voice.loadKokoro();
+  speak(`Hi, I'm ${vname(v)}. Pick me.`, null);
+}
+function openPicker() {
+  prevVoice = preset;
+  pickIdx = Math.max(0, VOICES.indexOf(preset));
+  renderPicker();
+  document.body.classList.add("picking");
+  refreshState();
+}
+function closePicker() { hush(); document.body.classList.remove("picking"); refreshState(); }
+$("pv-prev").onclick = $("pv-prev-name").onclick = () => stepPicker(-1);
+$("pv-next").onclick = $("pv-next-name").onclick = () => stepPicker(1);
+$("pv-cancel").onclick = () => { selectVoice(prevVoice ?? preset); closePicker(); };
+$("pv-start").onclick = () => {
+  selectVoice(VOICES[pickIdx]);
+  $("history").innerHTML = ""; turnsSinceTrap = 0; llm.forget();
+  closePicker();
+  show(`${vname(preset)} here. Hold the button and say something. I dare you.`, "sys");
+};
+addEventListener("keydown", (e) => {
+  if (!document.body.classList.contains("picking")) return;
+  if (e.key === "ArrowLeft") stepPicker(-1);
+  else if (e.key === "ArrowRight") stepPicker(1);
+  else if (e.key === "Enter") $("pv-start").click();
+  else if (e.key === "Escape") $("pv-cancel").click();
+});
+
 $("pitch").oninput = (e) => { voice.pitch = +e.target.value; };
 $("speed").oninput = (e) => { voice.speed = +e.target.value; };
 $("sw-text").onchange = (e) => { document.body.classList.toggle("text-mode", e.target.checked); if (e.target.checked) { openSheet(false); $("text").focus(); } };
@@ -111,7 +163,7 @@ $("llm-url").onchange = () => { if ($("sw-llm").checked) brain.llmUrl = $("llm-u
 // ---------------------------------------------------------------- brain mode
 function setMode(m) {
   mode = m;
-  slowGPU = false;
+  slowGPU = false; slowStrikes = 0;
   store.set("vox.mode", m);
   document.querySelectorAll("#modes .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.mode === m)));
   $("setup").hidden = true;
@@ -134,7 +186,13 @@ function loadModel() {
     refreshState();
     renderBrainNote();
   };
-  llm.load(mode).then(() => { loadingText = ""; refreshState(); renderBrainNote(); }).catch((e) => {
+  llm.load(mode).then(async () => {
+    // the first generation compiles GPU shaders; do it now, not on your first question
+    loadingText = "Warming up..."; refreshState();
+    try { for await (const _ of llm.reply("hi", "en")) { /* discard */ } } catch { /* fine */ }
+    llm.forget();
+    loadingText = ""; refreshState(); renderBrainNote();
+  }).catch((e) => {
     console.warn("LLM failed to load:", e);
     loadingText = "";
     refreshState();
@@ -210,7 +268,7 @@ async function handleSmart(text) {
   // a GPU too slow to start replying within 12 s would leave you hanging:
   // answer this turn with the joke engine instead
   let started = false;
-  const slow = setTimeout(() => { if (!started) { ctrl.abort(); slowGPU = true; void handleLite(text, true); } }, 12000);
+  const slow = setTimeout(() => { if (!started) { ctrl.abort(); if (++slowStrikes >= 2) slowGPU = true; renderBrainNote(); void handleLite(text, true); } }, 12000);
   try {
     for await (const piece of llm.reply(text, lang, ctrl.signal)) {
       started = true;
@@ -220,6 +278,7 @@ async function handleSmart(text) {
     }
     if (!ctrl.signal.aborted) flush(true);
     clearTimeout(slow);
+    if (started) slowStrikes = 0;
   } catch (e) {
     clearTimeout(slow);
     console.warn("LLM reply failed, using the joke engine:", e);
@@ -237,6 +296,8 @@ async function handleSmart(text) {
 async function handle(text) {
   text = text.trim();
   if (!text) return;
+  const heardLang = detectLang(text, lang);
+  if (heardLang !== lang) setLang(heardLang);
   const smart = mode !== "lite" && llm.ready && !brain.traps.active && !slowGPU;
   const wantsTrap = brain.intent(text, lang) === "trap" || (trapsOn && ++turnsSinceTrap >= 6);
   if (smart && !wantsTrap) return handleSmart(text);
@@ -274,8 +335,16 @@ $("send").onclick = send;
 // ---------------------------------------------------------------- push to talk
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, heard = "", interim = "", recStart = 0, micStream = null, micAnalyser = null;
+// Whisper hears any language without being told which; browser recognition is
+// the fallback while it downloads (and it only hears the selected language)
+const whisper = new Whisper();
+let recorder = null, usingWhisper = false;
+whisper.onStatus = () => {
+  if (whisper.state === "loading" && !loadingText) $("note").textContent = `Downloading on-device speech recognition... ${Math.round(whisper.progress * 100)}%`;
+  else if (whisper.state === "ready") $("note").textContent = "Speech recognition runs on your device (Whisper). Speak any language and it answers in that language.";
+};
 
-if (!SR) {
+if (!SR && !window.AudioContext) {
   $("note").textContent = "This browser has no speech recognition (Chrome and Edge do). Typing is on.";
   $("sw-text").checked = true;
   document.body.classList.add("text-mode");
@@ -291,6 +360,8 @@ async function openMic() {
     micAnalyser = voice.ctx.createAnalyser();
     micAnalyser.fftSize = 1024;
     voice.ctx.createMediaStreamSource(micStream).connect(micAnalyser);
+    recorder = new Recorder(voice.ctx, micStream);
+    whisper.load(hasGPU);
   } catch { /* the ring just won't pulse */ }
 }
 
@@ -305,8 +376,10 @@ function press() {
   recStart = performance.now();
   heard = ""; interim = "";
   refreshState();
-  if (!SR) return;
   void openMic();
+  usingWhisper = whisper.state === "ready" && !!recorder;
+  if (usingWhisper) { recorder.start(); return; }
+  if (!SR) return;
   rec = new SR();
   rec.lang = LANGS[lang].bcp;
   rec.interimResults = true;
@@ -343,6 +416,27 @@ function release() {
   $("ptt").classList.remove("down");
   $("timer").textContent = "";
   refreshState();
+  if (usingWhisper) {
+    usingWhisper = false;
+    const session = ++turnId;
+    thinking = true; refreshState();
+    // keep recording a moment so the last word isn't clipped
+    setTimeout(async () => {
+      let said = "";
+      try {
+        const audio = await recorder.stop();
+        if (audio.length > 16000 * 0.3) said = await whisper.transcribe(audio);
+      } catch (e) { console.warn("Whisper failed:", e); }
+      thinking = false;
+      if (session !== turnId) return;
+      answered = session;
+      // Whisper invents filler like "Thank you." on silence; ignore bracketed noise tags
+      said = said.replace(/\[[^\]]*\]|\([^)]*\)/g, "").trim();
+      if (said) void handle(said);
+      else { refreshState(); show("I didn't catch that. Hold the button while you talk.", "sys"); }
+    }, 200);
+    return;
+  }
   const session = turnId, r = rec;
   setTimeout(() => r?.stop(), 250); // don't clip the last word
   // some recognizers never fire onend after stop(): answer anyway
@@ -356,7 +450,7 @@ ptt.addEventListener("pointercancel", release);
 ptt.addEventListener("contextmenu", (e) => e.preventDefault());
 const typing = (el) => el instanceof HTMLElement && el.closest("input, textarea, select, [contenteditable]") !== null;
 addEventListener("keydown", (e) => {
-  if (e.code !== "Space" || typing(e.target)) return;
+  if (e.code !== "Space" || typing(e.target) || document.body.classList.contains("picking")) return;
   e.preventDefault();
   if (!e.repeat) press();
 });

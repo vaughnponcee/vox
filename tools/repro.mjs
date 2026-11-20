@@ -18,13 +18,15 @@ ws.onmessage = (e) => { const m = JSON.parse(e.data); if (pending.has(m.id)) { p
 const send = (method, params = {}) => new Promise((r) => { pending.set(++id, r); ws.send(JSON.stringify({ id, method, params })); });
 const ev = async (expr) => (await send("Runtime.evaluate", { expression: expr, returnByValue: true, awaitPromise: true })).result?.result?.value;
 const click = async (sel) => {
-  const r = await ev(`(()=>{const b=document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect();return [b.x+b.width/2,b.y+b.height/2]})()`);
+  const r = await ev(`(()=>{const e=document.querySelector(${JSON.stringify(sel)});if(!e||e.closest('[hidden]'))return null;const b=e.getBoundingClientRect();return [b.x+b.width/2,b.y+b.height/2]})()`);
+  if (!r) { logs.push(`(${sel} not visible, skipped)`); return; }
   for (const type of ["mousePressed", "mouseReleased"]) await send("Input.dispatchMouseEvent", { type, x: r[0], y: r[1], button: "left", clickCount: 1 });
 };
 await send("Runtime.enable");
 await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
 await send("Page.navigate", { url });
 await sleep(5000);
+logs.push("probe " + await ev(`location.href + " " + !!document.getElementById("setup") + " " + typeof window.vox`));
 await click("#setup [data-mode=lite]");
 await sleep(500);
 await ev(`document.getElementById('sw-text').click()`);

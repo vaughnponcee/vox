@@ -361,3 +361,37 @@ export class Brain {
     return { text: this.rng.choice(options).replace("{subj}", s), sfx: null, layer: "grammar" };
   }
 }
+
+// ---------------------------------------------------------------- language detection
+// Common short words per Latin-script language. Scores are word hits; ties and
+// low-evidence lines keep the current language so one stray word doesn't flip it.
+const MARKERS = {
+  en: ["the", "is", "are", "you", "and", "what", "my", "i", "it", "to", "do", "that", "this", "with", "how", "your", "me", "a", "not", "was"],
+  es: ["el", "la", "los", "las", "que", "es", "y", "de", "por", "qué", "cómo", "está", "eres", "tu", "mi", "yo", "no", "una", "un", "muy", "pero", "hola"],
+  fr: ["le", "la", "les", "est", "et", "je", "tu", "que", "pas", "une", "un", "des", "c'est", "vous", "moi", "très", "bonjour", "pourquoi", "comment", "suis"],
+  it: ["il", "che", "è", "e", "di", "non", "sono", "io", "tu", "una", "un", "come", "perché", "ciao", "mi", "ti", "sei", "molto", "anche", "questo"],
+  pt: ["o", "a", "que", "é", "e", "de", "não", "eu", "você", "um", "uma", "como", "por", "olá", "meu", "minha", "muito", "isso", "está", "sou"],
+};
+
+/** Best guess at the language of a line of text, from script first, then function words. */
+export function detectLang(text, current = "en") {
+  const t = norm(text);
+  if (/[฀-๿]/.test(t)) return "th";
+  if (/[ऀ-ॿ]/.test(t)) return "hi";
+  if (/[぀-ヿ]/.test(t)) return "ja";
+  if (/[一-鿿]/.test(t)) return "zh";
+  const words = t.match(new RegExp(WORD + "+", "gu")) ?? [];
+  if (!words.length) return current;
+  const scores = Object.fromEntries(Object.entries(MARKERS).map(([lang, ws]) => {
+    const set = new Set(ws);
+    return [lang, words.filter((w) => set.has(w)).length];
+  }));
+  // accented letters tilt toward the languages that use them
+  if (/[ñ¿¡]/.test(t)) scores.es += 2;
+  if (/[çèêàù]|œ/.test(t)) scores.fr += 1;
+  if (/[ãõ]/.test(t)) scores.pt += 2;
+  const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const [best, top] = ranked[0], second = ranked[1][1];
+  if (top === 0 || top === second) return MARKERS[current] ? current : (top ? best : current);
+  return best;
+}

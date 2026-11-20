@@ -1,46 +1,48 @@
-// Piper neural TTS in the browser: small VITS voices (20 to 60 MB) that
-// synthesize several times faster than real time on an ordinary CPU.
-// Voices download once and are kept in the browser's private file storage.
+// Piper neural TTS: small VITS voices (20 to 110 MB) that synthesize several
+// times faster than real time on an ordinary CPU. Synthesis runs in a worker
+// (piper-worker.js) so the page never freezes; voices download once and are kept
+// in the browser's private file storage.
 
-// esm.sh lets us pin the ONNX runtime the library is built against; the WASM
-// files must come from that exact same version.
-const PIPER = "https://esm.sh/@mintplex-labs/piper-tts-web@1.0.5?deps=onnxruntime-web@1.20.1";
-const PATHS = {
-  onnxWasm: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/",
-  piperData: "https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.data",
-  piperWasm: "https://cdn.jsdelivr.net/npm/@diffusionstudio/piper-wasm@1.0.0/build/piper_phonemize.wasm",
-};
-
-/** Piper voice per language; null means no Piper voice exists (use the browser's). */
+/** Default Piper speaker per language; null means none exists (use the browser's voice). */
 export const PIPER_LANG = {
-  en: "en_US-hfc_female-medium", zh: "zh_CN-huayan-medium", es: "es_ES-davefx-medium", fr: "fr_FR-siwis-medium",
+  en: "en_US-lessac-high", zh: "zh_CN-huayan-medium", es: "es_MX-claude-high", fr: "fr_FR-siwis-medium",
   it: "it_IT-paola-medium", pt: "pt_BR-faber-medium", ja: null, hi: null, th: null,
 };
 
-let lib = null;
-const sessions = new Map();
+let worker = null, nextId = 0;
+const waiting = new Map();
+const progressListeners = new Set();
 
-export async function piperSession(voiceId, onProgress) {
-  if (sessions.has(voiceId)) return sessions.get(voiceId);
-  const p = (async () => {
-    lib ??= await import(PIPER);
-    // TtsSession is a singleton that loads its model only once, so asking it for a
-    // second voice silently keeps the first. Clear it to get a real session per voice.
-    lib.TtsSession._instance = null;
-    return lib.TtsSession.create({
-      voiceId,
-      wasmPaths: PATHS,
-      progress: (pr) => onProgress?.(pr.total ? pr.loaded / pr.total : 0),
-    });
-  })();
-  sessions.set(voiceId, p);
-  p.catch(() => sessions.delete(voiceId));
-  return p;
+function getWorker() {
+  if (worker) return worker;
+  worker = new Worker(new URL("./piper-worker.js", import.meta.url), { type: "module" });
+  worker.onmessage = (e) => {
+    const m = e.data;
+    if (m.progress != null) { for (const f of progressListeners) f(m.progress, m.voiceId); return; }
+    const w = waiting.get(m.id);
+    if (!w) return;
+    waiting.delete(m.id);
+    m.error ? w.reject(new Error(m.error)) : w.resolve(m);
+  };
+  worker.onerror = (e) => { for (const w of waiting.values()) w.reject(new Error(e.message || "piper worker failed")); waiting.clear(); };
+  return worker;
 }
 
-/** Text -> decoded AudioBuffer. */
-export async function piperSynth(ctx, voiceId, text, onProgress) {
-  const s = await piperSession(voiceId, onProgress);
-  const wav = await s.predict(text);
-  return ctx.decodeAudioData(await wav.arrayBuffer());
+function call(msg) {
+  return new Promise((resolve, reject) => {
+    const id = ++nextId;
+    waiting.set(id, { resolve, reject });
+    getWorker().postMessage({ ...msg, id });
+  });
+}
+
+export function onPiperProgress(f) { progressListeners.add(f); }
+
+/** Download and initialize a voice ahead of time. */
+export function piperSession(voiceId) { return call({ voiceId, preload: true }); }
+
+/** Text -> decoded AudioBuffer (synthesis happens in the worker). */
+export async function piperSynth(ctx, voiceId, text) {
+  const { wav } = await call({ voiceId, text });
+  return ctx.decodeAudioData(wav);
 }

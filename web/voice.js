@@ -3,7 +3,7 @@
 //   kokoro  Kokoro-82M, higher quality, English only; meant for machines with WebGPU
 //   native  the browser's own SpeechSynthesis, for languages without a neural voice
 // Neural audio goes through one AnalyserNode so the face can lip-sync.
-import { PIPER_LANG, piperSession, piperSynth } from "./piper.js";
+import { PIPER_LANG, onPiperProgress, piperSession, piperSynth } from "./piper.js";
 
 const KOKORO_URL = "https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm";
 const MODEL = "onnx-community/Kokoro-82M-v1.0-ONNX";
@@ -11,12 +11,14 @@ const MODEL = "onnx-community/Kokoro-82M-v1.0-ONNX";
 // Voice presets. Piper voices follow the selected language when it isn't English
 // (each language has its own Piper speaker); Kokoro is English only.
 export const VOICES = [
-  { id: "hfc", label: "Hazel", engine: "piper", voice: "en_US-hfc_female-medium", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "ryan", label: "Ryan", engine: "piper", voice: "en_US-ryan-medium", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "alba", label: "Alba (UK)", engine: "piper", voice: "en_GB-alba-medium", lang: "en-GB", pitch: 0, rate: 1 },
-  { id: "heart", label: "Heart (studio, GPU)", engine: "kokoro", voice: "af_heart", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "george", label: "George (studio, GPU)", engine: "kokoro", voice: "bm_george", lang: "en-GB", pitch: 0, rate: 0.95 },
-  { id: "browser", label: "Browser voice", engine: "native", voice: null, lang: "auto", pitch: 0, rate: 1 },
+  { id: "lessac", desc: "Clear and upbeat", label: "Lessac (HQ)", engine: "piper", voice: "en_US-lessac-high", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "hfc", desc: "Warm and friendly", label: "Hazel", engine: "piper", voice: "en_US-hfc_female-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "ryan", desc: "Deep and laid back", label: "Ryan (HQ)", engine: "piper", voice: "en_US-ryan-high", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "cori", desc: "Crisp and British", label: "Cori (UK, HQ)", engine: "piper", voice: "en_GB-cori-high", lang: "en-GB", pitch: 0, rate: 1 },
+  { id: "natural", desc: "Smooth, every language", label: "Natural (Edge)", engine: "natural", voice: null, lang: "auto", pitch: 0, rate: 1.05 },
+  { id: "heart", desc: "Expressive studio voice", label: "Heart (studio, GPU)", engine: "kokoro", voice: "af_heart", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "george", desc: "Dry British wit", label: "George (studio, GPU)", engine: "kokoro", voice: "bm_george", lang: "en-GB", pitch: 0, rate: 0.95 },
+  { id: "browser", desc: "Plain and instant", label: "Basic browser voice", engine: "native", voice: null, lang: "auto", pitch: 0, rate: 1 },
 ];
 
 export const LANGS = {
@@ -39,13 +41,15 @@ export class Voice {
     this.rtf = null;       // real-time factor of the last neural synthesis (synth time / audio time)
     this.tooSlow = false;  // set when the device can't synthesize in real time; cleared by forceNeural()
     this.onStatus = () => {};
+    this.levelBuf = null;
+    onPiperProgress((f) => { this.piperProgress = f; this.onStatus(); });
   }
 
   /** Start downloading the Piper voice for this preset and language before it's needed. */
   preload(preset, lang) {
     if (preset.engine === "native") return;
     const id = lang === "en" ? (preset.engine === "piper" ? preset.voice : PIPER_LANG.en) : PIPER_LANG[lang];
-    if (id) piperSession(id, (f) => { this.piperProgress = f; this.onStatus(); }).catch(() => { this.piperOk = false; this.onStatus(); });
+    if (id) piperSession(id).then(() => { this.piperProgress = 1; this.onStatus(); }).catch(() => { this.piperOk = false; this.onStatus(); });
   }
 
   /** The user insists on the neural voice even on a slow device. */
@@ -100,14 +104,24 @@ export class Voice {
   }
 
   /** Synthesize ahead of time. Returns something play() understands. */
+  /** The best browser voice for a language: Edge's neural "Natural" voices first, then Google's. */
+  bestBrowserVoice(lang) {
+    if (!("speechSynthesis" in window)) return null;
+    const bcp = (LANGS[lang]?.bcp ?? "en-US").toLowerCase(), base = bcp.slice(0, 2);
+    const all = speechSynthesis.getVoices().filter((v) => v.lang.replace("_", "-").toLowerCase().startsWith(base));
+    const score = (v) => (/natural/i.test(v.name) ? 4 : 0) + (/online|google/i.test(v.name) ? 2 : 0) + (v.lang.toLowerCase().replace("_", "-") === bcp ? 1 : 0);
+    return all.sort((a, b) => score(b) - score(a))[0] ?? null;
+  }
+
   async prepare(text, preset, lang) {
+    if (preset.engine === "natural") return { kind: "native", text, preset, lang, voice: this.bestBrowserVoice(lang) };
     if (preset.engine === "piper" || (preset.engine === "kokoro" && (lang !== "en" || this.tooSlow || !this.kokoro))) {
       // Piper: the preset's speaker for English, the language's own speaker otherwise
       const id = lang === "en" ? (preset.engine === "piper" ? preset.voice : PIPER_LANG.en) : PIPER_LANG[lang];
       if (id && this.piperOk !== false) {
         try {
           const t0 = performance.now();
-          const buf = await piperSynth(this.ctx, id, text, (f) => { this.piperProgress = f; this.onStatus(); });
+          const buf = await piperSynth(this.ctx, id, text);
           this.piperOk = true;
           this.onStatus();
           return { kind: "kokoro", buf, synthMs: performance.now() - t0, text, engine: "piper" };
@@ -153,7 +167,7 @@ export class Voice {
     });
   }
 
-  speakNative({ text, preset, lang }, signal) {
+  speakNative({ text, preset, lang, voice: chosen }, signal) {
     return new Promise((resolve, reject) => {
       if (!("speechSynthesis" in window)) { resolve(); return; }
       const u = new SpeechSynthesisUtterance(text);
@@ -161,7 +175,8 @@ export class Voice {
       u.lang = bcp;
       const v = speechSynthesis.getVoices().find((x) => x.lang.replace("_", "-").toLowerCase().startsWith(bcp.toLowerCase().slice(0, 2)) && x.lang.toLowerCase().includes(bcp.slice(3).toLowerCase()))
         ?? speechSynthesis.getVoices().find((x) => x.lang.toLowerCase().startsWith(bcp.slice(0, 2).toLowerCase()));
-      if (v) u.voice = v;
+      const best = chosen ?? this.bestBrowserVoice(lang);
+      if (best) u.voice = best; else if (v) u.voice = v;
       u.pitch = Math.max(0, Math.min(2, 1 + (preset.pitch + this.pitch) / 12));
       u.rate = Math.max(0.5, Math.min(2, preset.rate * this.speed));
       // no audio stream to analyse: animate the mouth from word boundaries
@@ -180,7 +195,7 @@ export class Voice {
   level() {
     if (this.nativeLevel > 0.01) return this.nativeLevel;
     if (!this.out) return 0;
-    const d = new Float32Array(this.out.fftSize);
+    const d = (this.levelBuf ??= new Float32Array(this.out.fftSize)); // reused: no garbage per frame
     this.out.getFloatTimeDomainData(d);
     let s = 0;
     for (const x of d) s += x * x;

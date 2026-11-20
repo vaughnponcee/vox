@@ -102,3 +102,16 @@ test("optional LLM: falls back to the hybrid brain when the server is down", asy
   const r = await b.replyAsync("my grandma drives a forklift");
   assert.notEqual(r.layer, "llm");
 });
+
+test("detectLang: scripts are decisive, Latin languages by function words", async () => {
+  const { detectLang } = await import("../web/brain.js");
+  const cases = [
+    ["我喜欢的类型是带芯片的美国人工智能", "zh"], ["你好", "zh"], ["こんにちは、元気ですか", "ja"], ["สวัสดีครับ คุณชื่ออะไร", "th"],
+    ["नमस्ते, आप कैसे हैं", "hi"], ["what is your type baby", "en"], ["¿qué tal? me llamo Ana y no sé", "es"],
+    ["je ne sais pas, c'est très bizarre", "fr"], ["ciao, come stai? io sono molto stanco", "it"], ["olá, eu não sei o que você quer", "pt"],
+  ];
+  for (const [text, want] of cases) assert.equal(detectLang(text, "en"), want, text);
+  // no evidence: keep the current language
+  assert.equal(detectLang("ok", "es"), "es");
+  assert.equal(detectLang("pizza", "fr"), "fr");
+});
