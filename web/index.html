@@ -92,6 +92,17 @@
   #history li span{display:block;font-size:11px;color:var(--mute)}
   .note{font-size:12.5px;color:var(--mute);margin-top:14px;line-height:1.5}
   .note a{color:var(--ink)}
+  .setup{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:rgba(251,250,248,.86);backdrop-filter:blur(8px);padding:20px}
+  .setup[hidden]{display:none}
+  .setup-card{width:min(440px,100%);background:#fff;border-radius:26px;box-shadow:0 24px 60px rgba(30,25,50,.16);padding:28px;text-align:left}
+  .setup-card h2{margin:0 0 6px;font-size:24px;letter-spacing:-.02em}
+  .setup-card p{margin:0 0 18px;color:var(--mute);font-size:14.5px}
+  .setup-card .small{margin:14px 0 0;font-size:12.5px}
+  .pick{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:18px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .2s,background .2s}
+  .pick:hover:not(:disabled){border-color:var(--accent);background:#fff8f6}
+  .pick:disabled{opacity:.45;cursor:not-allowed}
+  .pick b{display:block;font-size:16px}
+  .pick span{color:var(--mute);font-size:13.5px}
 </style>
 </head>
 <body data-state="idle">
@@ -123,19 +134,33 @@
   <div class="textrow"><input id="text" placeholder="Type something..." autocomplete="off"><button id="send">Send</button></div>
 </footer>
 
+<div class="setup" id="setup" hidden>
+  <div class="setup-card">
+    <h2>Pick a brain</h2>
+    <p>The AI and the voices run on your device. Only speech recognition uses your browser's own service (typing works too).</p>
+    <button class="pick" data-mode="smart"><b>Smart AI</b><span>Real conversations. Downloads about 0.9 GB once (more on some GPUs).</span></button>
+    <button class="pick" data-mode="fast"><b>Fast AI</b><span>Quicker on older GPUs. Downloads about 0.3 to 0.4 GB once.</span></button>
+    <button class="pick" data-mode="lite"><b>Joke engine</b><span>Instant, no download. Traps, roasts and riddles.</span></button>
+    <p class="small" id="gpu-note"></p>
+  </div>
+</div>
 <div class="scrim" id="scrim"></div>
 <aside class="sheet" id="sheet" aria-label="Settings">
   <div class="head"><h2>Settings</h2><button class="round" id="close" title="Close" style="width:38px;height:38px;box-shadow:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button></div>
+  <h3>Brain</h3>
+  <div class="chips" id="modes"><button class="chip" data-mode="smart">Smart AI</button><button class="chip" data-mode="fast">Fast AI</button><button class="chip" data-mode="lite">Joke engine</button></div>
+  <p class="note" id="brain-note" style="margin-top:8px"></p>
   <h3>Language</h3>
   <div class="chips" id="langs"></div>
   <h3>Voice</h3>
   <div class="chips" id="voices"></div>
+  <p class="note" id="engine" style="margin-top:8px"></p>
   <h3>Sound</h3>
   <div class="row"><span>Pitch</span><input type="range" id="pitch" min="-8" max="8" step="1" value="0"></div>
   <div class="row"><span>Speed</span><input type="range" id="speed" min="0.6" max="1.8" step="0.05" value="1"></div>
   <div class="row"><span>Stings</span><span class="chips"><button class="chip" data-sting="boom">Boom</button><button class="chip" data-sting="crickets">Crickets</button><button class="chip" data-sting="rimshot">Rimshot</button></span></div>
   <h3>Options</h3>
-  <div class="row"><span>Neural voice<small id="engine">Loads on first talk (Kokoro-82M)</small></span><label class="sw"><input type="checkbox" id="sw-neural" checked><span></span></label></div>
+
   <div class="row"><span>Type instead of talk</span><label class="sw"><input type="checkbox" id="sw-text"><span></span></label></div>
   <div class="row"><span>Surprise traps<small>A trick question every few turns</small></span><label class="sw"><input type="checkbox" id="sw-traps" checked><span></span></label></div>
   <div class="row" style="display:block"><div style="display:flex;justify-content:space-between;align-items:center"><span>Local LLM<small>OpenAI-compatible server</small></span><label class="sw"><input type="checkbox" id="sw-llm"><span></span></label></div><input class="url" id="llm-url" value="http://localhost:8080/v1" spellcheck="false" aria-label="LLM endpoint"></div>

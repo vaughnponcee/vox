@@ -4,6 +4,7 @@ import { Brain } from "./brain.js";
 import { AudioQueue, sentences } from "./queue.js";
 import { Voice, VOICES, LANGS } from "./voice.js";
 import { Face } from "./face.js";
+import { LLM, MODELS, clean, webgpuAvailable } from "./llm.js";
 
 const $ = (id) => document.getElementById(id);
 const [corpus, data] = await Promise.all([
@@ -11,7 +12,15 @@ const [corpus, data] = await Promise.all([
   fetch("data/brain.json").then((r) => r.json()),
 ]);
 
-const brain = new Brain(corpus, data, { trapEvery: 4 });
+const brain = new Brain(corpus, data, { trapEvery: 0 });
+const llm = new LLM();
+const hasGPU = await webgpuAvailable();
+// brain mode: "smart" / "fast" = on-device LLM, "lite" = instant joke engine
+const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
+let mode = store.get("vox.mode");
+let trapsOn = true, turnsSinceTrap = 0;
+let generation = null; // AbortController for the reply being generated
+let slowGPU = false;
 const voice = new Voice();
 const face = new Face($("face"));
 let speaking = false;
@@ -20,10 +29,11 @@ let lang = "en", preset = VOICES[0], thinking = false, holding = false;
 
 // ---------------------------------------------------------------- state: idle / listening / thinking / talking
 const STATUS = { idle: "Hold to talk", listening: "Listening...", thinking: "Contemplating...", talking: "Talking..." };
+let loadingText = "";
 function refreshState() {
   const s = holding ? "listening" : thinking ? "thinking" : speaking ? "talking" : "idle";
   document.body.dataset.state = s;
-  $("status").textContent = STATUS[s];
+  $("status").textContent = s === "idle" && loadingText ? loadingText : STATUS[s];
   face.listening = s === "listening";
   face.thinking = s === "thinking";
 }
@@ -53,7 +63,7 @@ $("cc").onclick = () => {
   $("cc").setAttribute("aria-pressed", String(on));
   document.body.classList.toggle("cc-off", !on);
 };
-$("stop").onclick = () => { queue.interrupt(); voice.nativeLevel = 0; if ("speechSynthesis" in window) speechSynthesis.cancel(); };
+$("stop").onclick = () => { generation?.abort(); queue.interrupt(); voice.nativeLevel = 0; if ("speechSynthesis" in window) speechSynthesis.cancel(); };
 $("menu").onclick = () => openSheet(!$("sheet").classList.contains("open"));
 $("scrim").onclick = () => openSheet(false);
 const nice = (s) => s.charAt(0) + s.slice(1).toLowerCase();
@@ -68,12 +78,14 @@ for (const [code, l] of Object.entries(LANGS)) {
     document.querySelectorAll("#langs .chip").forEach((k) => k.setAttribute("aria-pressed", String(k === b)));
     if (lang !== "en" && preset.engine === "kokoro") selectVoice(VOICES.find((v) => v.id === "polyglot"));
     $("lang-label").textContent = b.textContent;
+    voice.preload(preset, lang);
     show(`Now in ${b.textContent}. Go on, say something.`, "sys");
   };
   $("langs").append(b);
 }
 function selectVoice(v) {
   preset = v;
+  if (mode) voice.preload(v, lang);
   document.querySelectorAll("#voices .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.id === v.id)));
 }
 for (const v of VOICES) {
@@ -81,7 +93,7 @@ for (const v of VOICES) {
   b.className = "chip";
   b.textContent = nice(v.label);
   b.dataset.id = v.id;
-  b.onclick = () => selectVoice(v);
+  b.onclick = () => { selectVoice(v); voice.unlock(); if (v.engine === "kokoro") void voice.loadKokoro(); voice.onStatus(); };
   $("voices").append(b);
 }
 selectVoice(preset);
@@ -89,13 +101,43 @@ selectVoice(preset);
 $("pitch").oninput = (e) => { voice.pitch = +e.target.value; };
 $("speed").oninput = (e) => { voice.speed = +e.target.value; };
 $("sw-text").onchange = (e) => { document.body.classList.toggle("text-mode", e.target.checked); if (e.target.checked) { openSheet(false); $("text").focus(); } };
-$("sw-traps").onchange = (e) => { brain.trapEvery = e.target.checked ? 4 : 0; };
+$("sw-traps").onchange = (e) => { trapsOn = e.target.checked; };
 $("sw-llm").onchange = (e) => { brain.llmUrl = e.target.checked ? $("llm-url").value.trim() : null; };
 $("llm-url").onchange = () => { if ($("sw-llm").checked) brain.llmUrl = $("llm-url").value.trim(); };
-$("sw-neural").onchange = (e) => {
-  if (e.target.checked) { voice.unlock(); void voice.loadKokoro(); if (voice.tooSlow) voice.forceNeural(); }
-  else { voice.tooSlow = true; voice.onStatus(); }
-};
+// ---------------------------------------------------------------- brain mode
+function setMode(m) {
+  mode = m;
+  slowGPU = false;
+  store.set("vox.mode", m);
+  document.querySelectorAll("#modes .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.mode === m)));
+  $("setup").hidden = true;
+  voice.preload(preset, lang);
+  if (m !== "lite") loadModel();
+  else { loadingText = ""; refreshState(); }
+  renderBrainNote();
+}
+function renderBrainNote() {
+  $("brain-note").textContent = mode === "lite" ? "Instant joke engine: traps, roasts and riddles. No download."
+    : !hasGPU ? "This browser has no WebGPU, so the AI can't run here. Using the joke engine. Try Chrome or Edge."
+    : slowGPU ? "Your GPU is too slow for the AI to answer quickly, so the joke engine is answering. Try Fast AI."
+    : llm.ready ? `Running ${llm.model.split("-q4")[0]} on your GPU.`
+    : `Downloads ${MODELS[mode].size} once, then works offline.`;
+}
+function loadModel() {
+  if (!hasGPU) { loadingText = ""; renderBrainNote(); return; }
+  llm.onProgress = () => {
+    loadingText = llm.ready ? "" : `Waking up... ${Math.round(llm.progress * 100)}%`;
+    refreshState();
+    renderBrainNote();
+  };
+  llm.load(mode).then(() => { loadingText = ""; refreshState(); renderBrainNote(); }).catch((e) => {
+    console.warn("LLM failed to load:", e);
+    loadingText = "";
+    refreshState();
+    $("brain-note").textContent = "The AI couldn't start on this device, so the joke engine is answering.";
+  });
+}
+document.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
 document.querySelectorAll("[data-sting]").forEach((b) => (b.onclick = () => {
   voice.unlock();
   queue.push({ label: b.dataset.sting, play: (_p, s) => { face.punch(); return voice.sting(b.dataset.sting, s); } });
@@ -104,10 +146,14 @@ document.querySelectorAll("[data-sting]").forEach((b) => (b.onclick = () => {
 voice.onStatus = () => {
   const s = voice.status;
   $("engine").textContent =
-    s === "loading" ? `Downloading the voice... ${Math.round(voice.progress * 100)}%`
-    : s === "failed" ? "Not available here: using your browser's voice"
-    : voice.tooSlow && s.startsWith("kokoro") ? `Too slow on this device (${voice.rtf?.toFixed(1)}x real time): using your browser's voice`
-    : s === "kokoro-webgpu" ? "Kokoro-82M on your GPU" : s === "kokoro-wasm" ? "Kokoro-82M on your CPU" : "Loads on first talk (Kokoro-82M)";
+    preset.engine === "kokoro"
+      ? (s === "loading" ? `Downloading the studio voice... ${Math.round(voice.progress * 100)}%`
+        : s === "failed" ? "Studio voice unavailable here: using the fast voice"
+        : voice.tooSlow ? `Studio voice too slow on this device (${voice.rtf?.toFixed(1)}x real time): using the fast voice`
+        : s === "kokoro-webgpu" ? "Kokoro-82M on your GPU" : "Kokoro-82M on your CPU")
+      : preset.engine === "native" ? "Your browser's built-in voice"
+      : voice.piperOk === false ? "Neural voice unavailable: using your browser's voice"
+      : "Piper neural voice, runs on your CPU";
 };
 
 // ---------------------------------------------------------------- speaking
@@ -129,18 +175,76 @@ function speak(text, sfx) {
     queue.push({
       label: part,
       prepare: () => voice.prepare(part, p, l),
-      play: (prep, signal) => { stat.tts = prep.kind === "kokoro" ? `Kokoro, ${Math.round(prep.synthMs)} ms to synthesize` : "browser voice"; renderStats(); return voice.play(prep, signal); },
+      play: (prep, signal) => { stat.tts = prep.kind === "kokoro" ? `${prep.engine === "piper" ? "Piper" : "Kokoro"}, ${Math.round(prep.synthMs)} ms to synthesize` : "browser voice"; renderStats(); return voice.play(prep, signal); },
     });
   }
   if (sfx) queue.push({ label: sfx, play: (_p, s) => { face.punch(sfx === "crickets" ? "shocked" : "smug"); return voice.sting(sfx, s); } });
 }
 
+/** Smart mode: stream the LLM reply, speaking each sentence as soon as it is complete. */
+async function handleSmart(text) {
+  generation?.abort();
+  const ctrl = new AbortController();
+  generation = ctrl;
+  thinking = true; refreshState();
+  history(text, "you");
+  const t0 = performance.now();
+  let buf = "", said = "", first = 0;
+  const flush = (final) => {
+    // speak whole sentences; keep the unfinished tail for the next chunk
+    const m = final ? [buf, buf, ""] : /^([\s\S]*?(?:[.!?…]["')\]]*\s|[。！？]["'）」]*))([\s\S]*)$/.exec(buf);
+    if (!m) return;
+    const sentence = clean(m[1]);
+    buf = final ? "" : m[2];
+    if (!sentence) return;
+    if (!first) { first = performance.now() - t0; thinking = false; refreshState(); }
+    said += (said ? " " : "") + sentence;
+    show(said, "llm", text);
+    speak(sentence, null);
+  };
+  // a GPU too slow to start replying within 12 s would leave you hanging:
+  // answer this turn with the joke engine instead
+  let started = false;
+  const slow = setTimeout(() => { if (!started) { ctrl.abort(); slowGPU = true; void handleLite(text, true); } }, 12000);
+  try {
+    for await (const piece of llm.reply(text, lang, ctrl.signal)) {
+      started = true;
+      if (ctrl.signal.aborted) return;
+      buf += piece;
+      while (buf && /[.!?…]["')\]]*\s|[。！？]/.test(buf)) { const before = buf; flush(false); if (buf === before) break; }
+    }
+    if (!ctrl.signal.aborted) flush(true);
+    clearTimeout(slow);
+  } catch (e) {
+    clearTimeout(slow);
+    console.warn("LLM reply failed, using the joke engine:", e);
+    thinking = false;
+    return handleLite(text, true);
+  }
+  thinking = false;
+  if (said) {
+    history(said, "vox", "AI");
+    stat.layer = "on-device AI"; stat.ms = `${Math.round(first)} ms to first sentence`; renderStats();
+  }
+  refreshState();
+}
+
 async function handle(text) {
   text = text.trim();
   if (!text) return;
+  const smart = mode !== "lite" && llm.ready && !brain.traps.active && !slowGPU;
+  const wantsTrap = brain.intent(text, lang) === "trap" || (trapsOn && ++turnsSinceTrap >= 6);
+  if (smart && !wantsTrap) return handleSmart(text);
+  if (wantsTrap) turnsSinceTrap = 0;
+  return handleLite(text);
+}
+
+async function handleLite(text, logged = false) {
   thinking = true; refreshState();
-  history(text, "you");
-  const r = await brain.replyAsync(text, lang);
+  if (!logged) history(text, "you");
+  const r = brain.traps.active || brain.intent(text, lang) === "trap" ? brain.reply(text, lang)
+    : (trapsOn && turnsSinceTrap === 0 && mode !== "lite") ? (brain.traps.start(lang, brain.rng), { text: brain.traps.active?.steps[0].say ?? "", sfx: null, layer: "trap", ms: 0 })
+    : await brain.replyAsync(text, lang);
   // a short beat of "contemplating" reads better than an instant answer
   await new Promise((res) => setTimeout(res, 280));
   thinking = false;
@@ -191,6 +295,7 @@ function press() {
   voice.unlock();
   if ($("sw-neural").checked && !voice.loading) void voice.loadKokoro();
   queue.interrupt(); // you talk, it shuts up
+  generation?.abort();
   $("ptt").classList.add("down");
   recStart = performance.now();
   heard = ""; interim = "";
@@ -273,4 +378,8 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 refreshState();
-window.vox = { brain, voice, queue, handle, face };
+// first visit: choose a brain (the AI is a big download, so ask)
+if (!mode) { $("setup").hidden = false; $("gpu-note").textContent = hasGPU ? "Your browser supports WebGPU." : "This browser has no WebGPU, so only the joke engine can run here (try Chrome or Edge)."; if (!hasGPU) document.querySelectorAll("#setup [data-mode='smart'], #setup [data-mode='fast']").forEach((b) => (b.disabled = true)); }
+else setMode(mode);
+voice.onStatus();
+window.vox = { brain, voice, queue, handle, face, llm };

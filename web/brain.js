@@ -274,6 +274,7 @@ export class Brain {
     this.history = [];
   }
 
+  /** Which intent (joke, riddle, roast, trap) the text asks for, or null. */
   intent(text, lang) {
     for (const [name, byLang] of Object.entries(this.data.intents))
       if (containsPhrase(text, [...(byLang[lang] ?? []), ...(lang !== "en" ? byLang.en : [])], 0.88)) return name;

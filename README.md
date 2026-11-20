@@ -1,8 +1,8 @@
 # vox-chaos
 
-A hold-to-talk comedy voice bot. You talk; it answers with bait-and-switch traps, roasts, riddles and generated nonsense in a neural voice, with sting sound effects and a lip-synced pixel host. It speaks nine languages.
+A hold-to-talk comedy voice bot. You talk; a small LLM on your GPU answers in a fast neural voice, with traps, roasts and sting sound effects, and a lip-synced mascot. Without a GPU it falls back to an instant joke engine. It speaks nine languages.
 
-There's no LLM: the conversation comes from a four-layer brain that replies in well under a millisecond. Two ways to run it:
+Nothing runs on a server: the AI and the voices run in your browser. Two ways to run it:
 - **Web:** static files, on GitHub Pages.
 - **CLI:** a Python program.
 
@@ -18,20 +18,22 @@ python bench/bench.py && node bench/bench.mjs
 
 The scraper, brain and tests use the Python and Node standard libraries only. Voice output in the CLI is optional: `pip install kokoro-onnx`, or `pip install edge-tts`.
 
-## The brain: four layers, no model
+## Two brains
 
-Every turn runs through the layers in order. The first one that has something to say answers.
+On first visit you pick one. You can switch at any time in Settings.
 
-| layer | what it does | file |
-|---|---|---|
-| 1. Trap state machine | Multi-turn bait-and-switch: say silk five times, then "what do cows drink?"; the 28-days trivia; "answer without saying yes"; "how do you say I am a potato in Spanish". Replies are classified by fuzzy matching against yes/no lexicons and answer lists, per language. Traps also start on their own every fourth turn. | `TrapRunner` |
-| 2. BM25 retrieval | Okapi BM25 (k1 = 1.5, b = 0.75) over the prompts and tags of 530 corpus entries, filtered by language. Uses word tokens for spaced languages and character bigrams for Chinese, Japanese and Thai. A hit must score at least 3.0 *and* cover 60% of your content words, so one shared word ("cat") isn't enough to fire an unrelated cat joke. | `BM25` |
-| 3. Subject reflector | Finds what you're talking about (possessives first, then nouns after articles, stopping at verbs) and flips pronouns. "my boss thinks I'm lazy" gives the subject "your boss" and the reflection "your boss thinks you're lazy". Chinese gets 我 ↔ 你 swaps. | `Reflector` |
-| 4. Generators | A context-free grammar puts the subject into roasts, fake news, fake facts and deflections, each optionally followed by a tag sentence: 20,786,688 distinct lines per subject. A third-order word Markov chain recombines corpus punchlines and rejects any output that is a substring of a training line. | `Grammar`, `Markov` |
+**On-device AI (Smart or Fast).** Qwen2.5 (1.5B or 0.5B, 4-bit), run on your GPU by [WebLLM](https://github.com/mlc-ai/web-llm) 0.2.86 inside a Web Worker. It's free: there's no server and no API key. The weights download once (about 0.9 GB or 0.3 to 0.4 GB) and are cached by the browser.
+- **Persona:** a system prompt makes it a playful, flirty, quick comedian on a phone call. Replies are short, it teases and calls back to earlier lines, and it usually ends with a question.
+- **Streaming:** the reply streams token by token. Each sentence is handed to the voice the moment it ends, so speech starts while the rest is still being written. Small models sometimes slip in markdown or emoji; those are stripped before speaking.
+- **f32 fallback:** GPUs without 16-bit float shaders (common on integrated and mobile GPUs) get the f32 build of the same model automatically.
+- **Slow GPUs:** if a GPU can't start a reply within 12 s, that turn is answered by the joke engine instead of leaving you waiting.
+- **Traps:** the trap state machine still runs in AI mode. Say "play a game", or one starts on its own every sixth turn.
 
-**Optional local LLM.** Point the brain at any OpenAI-compatible server, such as llama.cpp's `llama-server` on `http://localhost:8080/v1`. Off-script lines then go to the model, while traps and explicit joke, roast and riddle requests stay in the hybrid brain. Any error or 8-second timeout falls back to the hybrid brain silently.
+**Joke engine.** The original four-layer brain, described below. It answers instantly and needs no download or GPU.
 
-**One brain, two languages.** The brain exists twice: `brain/core.py` for the CLI, and `web/brain.js`, a direct port, for the browser. Both read the same `web/data/brain.json`, which holds the traps, grammar, lexicons and pronoun tables. Both run the same `tests/golden.json`, covering subject extraction, reflection, retrieval and every trap path. The JavaScript port reimplements `difflib`'s Ratcliff-Obershelp ratio, so fuzzy matching gives identical results in both.
+**Not verified on real hardware.** I couldn't test the AI's reply quality or speed here. The only GPU available was a software emulator. It loaded the model fine (download, cache, worker, f32 switch, streaming), but generated garbage text at 0.08 tokens/s, which is a known limitation of emulated WebGPU. On a real GPU, WebLLM's published numbers for these models are tens of tokens per second.
+
+## The joke engine: four layers, no model
 
 ### Latency
 
@@ -66,29 +68,25 @@ The current build kept 530 of 541 entries (11 duplicates dropped).
 
 ## Voice
 
-**Browser.**
-- [kokoro-js](https://github.com/hexgrad/kokoro) 1.2.1 runs Kokoro-82M (`onnx-community/Kokoro-82M-v1.0-ONNX`, Apache-2.0) in the tab:
-  - **WebGPU:** used when available, with the fp32 weights.
-  - **WASM:** the fallback, with the q8 weights.
-  - The weights download once and are cached by the browser.
-- Each reply is split into sentences. The next sentence is synthesized while the current one plays.
-- The audio goes through a Web Audio `AnalyserNode` that drives the VU meter and the mouth.
-- Pitch and speed are independent: `playbackRate` sets speed, and `detune` compensates so pitch only moves when you ask.
-- The stings (deep boom, crickets, rimshot) are synthesized with oscillators and filtered noise. There are no audio files.
+| voice | engine | speed | quality |
+|---|---|---|---|
+| Hazel, Ryan, Alba (default) | [Piper](https://github.com/rhasspy/piper) VITS voices, 20 to 60 MB each, via `@mintplex-labs/piper-tts-web` and ONNX Runtime Web (WASM) | about 3x faster than real time on a CPU (measured 1.25 s for 3.5 s of speech) | natural, slightly synthetic |
+| Heart, George (studio) | Kokoro-82M via kokoro-js 1.2.1, WebGPU fp32 or WASM q8 | fast on WebGPU; about 3x *slower* than real time on CPU only | the most human |
+| Browser voice | SpeechSynthesis | instant | depends on the system |
 
-**Measured in headless Edge, CPU only (no GPU):**
-- The model loaded in 13 s.
-- WASM synthesis ran about 3× *slower* than real time.
+**Piper:**
+- **Languages:** Piper voices exist for English, Mandarin, Spanish, French, Italian and Portuguese, and each language uses its own speaker. Japanese, Hindi and Thai have no Piper voice, so they use the browser's.
+- **Preloading:** the voice for the current language starts downloading as soon as you pick a brain, so the first reply doesn't wait for it.
+- **Fixed singleton bug:** the Piper library keeps one global session and silently ignores a second voice. The app clears that singleton so each voice gets its own session. Before the fix, Mandarin text was being read by the English voice.
+- **Pinned runtime:** the ONNX runtime is pinned (esm.sh `?deps=onnxruntime-web@1.20.1`, with the WASM files from the same version), because the library's own default URL no longer exists.
 
-A slow device would leave long silences, so the app measures every neural line. After the warm-up line, if synthesis is more than 1.5× slower than real time, it switches to the browser's native voice and says so on the display. The NEURAL VOICE switch forces Kokoro back. With WebGPU this doesn't trigger.
+**Kokoro:** it downloads only if you pick a studio voice. If the device synthesizes slower than real time, it hands over to Piper.
 
-**Language coverage.** The kokoro-js browser package phonemizes English only (American and British voices). Mandarin, Japanese, Spanish, French, Hindi, Italian, Portuguese and Thai use the browser's SpeechSynthesis voices for those languages.
+**Stings:** the boom, crickets and rimshot are synthesized with Web Audio; there are no audio files.
 
-**CLI.** [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx) with the int8 model (92 MB plus 28 MB of voices, downloaded on first run to `~/.cache/vox-chaos`) speaks all of those except Thai with Kokoro's own voices. Thai, and any machine without kokoro-onnx, falls back to edge-tts.
+**CLI:** the CLI is unchanged. kokoro-onnx runs faster than real time on CPU in English, Spanish, French, Mandarin and Japanese:
 
-Measured on CPU after warm-up (real-time factor below 1 means faster than real time):
-
-| language | rtf |
+| language | real-time factor |
 |---|---:|
 | English | 0.54 to 0.71 |
 | British English | 0.57 |

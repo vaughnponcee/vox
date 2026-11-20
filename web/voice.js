@@ -1,19 +1,22 @@
-// Voice output: Kokoro-82M neural TTS in the browser (ONNX via transformers.js,
-// WebGPU when available, else WASM), with the browser's own SpeechSynthesis as
-// the fallback and for languages Kokoro's browser build doesn't phonemize.
-// All Kokoro audio goes through one AnalyserNode so the face can lip-sync.
+// Voice output, three engines:
+//   piper   fast neural voices (default): several times faster than real time on a CPU
+//   kokoro  Kokoro-82M, higher quality, English only; meant for machines with WebGPU
+//   native  the browser's own SpeechSynthesis, for languages without a neural voice
+// Neural audio goes through one AnalyserNode so the face can lip-sync.
+import { PIPER_LANG, piperSession, piperSynth } from "./piper.js";
 
 const KOKORO_URL = "https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm";
 const MODEL = "onnx-community/Kokoro-82M-v1.0-ONNX";
 
-// Voice presets. Kokoro's browser package speaks American and British English;
-// everything else goes to a native voice for that language.
+// Voice presets. Piper voices follow the selected language when it isn't English
+// (each language has its own Piper speaker); Kokoro is English only.
 export const VOICES = [
-  { id: "host", label: "AMERICAN HOST", engine: "kokoro", voice: "am_michael", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "deadpan", label: "BRITISH DEADPAN", engine: "kokoro", voice: "bm_george", lang: "en-GB", pitch: -2, rate: 0.92 },
-  { id: "diva", label: "DRAMA QUEEN", engine: "kokoro", voice: "af_heart", lang: "en-US", pitch: 2, rate: 1.1 },
-  { id: "posh", label: "POSH NARRATOR", engine: "kokoro", voice: "bf_emma", lang: "en-GB", pitch: 0, rate: 0.95 },
-  { id: "polyglot", label: "POLYGLOT", engine: "native", voice: null, lang: "auto", pitch: 0, rate: 1 },
+  { id: "hfc", label: "Hazel", engine: "piper", voice: "en_US-hfc_female-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "ryan", label: "Ryan", engine: "piper", voice: "en_US-ryan-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "alba", label: "Alba (UK)", engine: "piper", voice: "en_GB-alba-medium", lang: "en-GB", pitch: 0, rate: 1 },
+  { id: "heart", label: "Heart (studio, GPU)", engine: "kokoro", voice: "af_heart", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "george", label: "George (studio, GPU)", engine: "kokoro", voice: "bm_george", lang: "en-GB", pitch: 0, rate: 0.95 },
+  { id: "browser", label: "Browser voice", engine: "native", voice: null, lang: "auto", pitch: 0, rate: 1 },
 ];
 
 export const LANGS = {
@@ -36,6 +39,13 @@ export class Voice {
     this.rtf = null;       // real-time factor of the last neural synthesis (synth time / audio time)
     this.tooSlow = false;  // set when the device can't synthesize in real time; cleared by forceNeural()
     this.onStatus = () => {};
+  }
+
+  /** Start downloading the Piper voice for this preset and language before it's needed. */
+  preload(preset, lang) {
+    if (preset.engine === "native") return;
+    const id = lang === "en" ? (preset.engine === "piper" ? preset.voice : PIPER_LANG.en) : PIPER_LANG[lang];
+    if (id) piperSession(id, (f) => { this.piperProgress = f; this.onStatus(); }).catch(() => { this.piperOk = false; this.onStatus(); });
   }
 
   /** The user insists on the neural voice even on a slow device. */
@@ -91,6 +101,24 @@ export class Voice {
 
   /** Synthesize ahead of time. Returns something play() understands. */
   async prepare(text, preset, lang) {
+    if (preset.engine === "piper" || (preset.engine === "kokoro" && (lang !== "en" || this.tooSlow || !this.kokoro))) {
+      // Piper: the preset's speaker for English, the language's own speaker otherwise
+      const id = lang === "en" ? (preset.engine === "piper" ? preset.voice : PIPER_LANG.en) : PIPER_LANG[lang];
+      if (id && this.piperOk !== false) {
+        try {
+          const t0 = performance.now();
+          const buf = await piperSynth(this.ctx, id, text, (f) => { this.piperProgress = f; this.onStatus(); });
+          this.piperOk = true;
+          this.onStatus();
+          return { kind: "kokoro", buf, synthMs: performance.now() - t0, text, engine: "piper" };
+        } catch (e) {
+          console.warn("Piper unavailable, using the browser voice:", e);
+          this.piperOk = false;
+          this.onStatus();
+        }
+      }
+      return { kind: "native", text, preset, lang };
+    }
     const kokoroOk = preset.engine === "kokoro" && lang === "en" && this.kokoro && !this.tooSlow;
     if (!kokoroOk) return { kind: "native", text, preset, lang };
     const t0 = performance.now();
@@ -104,7 +132,7 @@ export class Voice {
     this.synths = (this.synths ?? 0) + 1;
     // the first synthesis pays one-time warm-up costs, so judge speed from the second on
     if (this.synths > 1 && this.rtf > 1.5 && !this.forced) { this.tooSlow = true; this.onStatus(); }
-    return { kind: "kokoro", buf, synthMs, text };
+    return { kind: "kokoro", buf, synthMs, text, engine: "kokoro" };
   }
 
   play(prepared, signal) {
