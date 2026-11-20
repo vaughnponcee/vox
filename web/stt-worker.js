@@ -4,6 +4,7 @@
 // Messages: {type:"load", webgpu} -> {type:"ready"} | progress; {type:"run", id, audio} -> {id, text} | {id, error}
 import { pipeline, Tensor } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm";
 
+// base: about 80 to 150 MB and fast; small was accurate but took 30 s+ per sentence on a CPU
 const MODEL = "onnx-community/whisper-base";
 let asr = null;
 
@@ -31,8 +32,7 @@ self.onmessage = async (e) => {
     try {
       const files = new Map();
       asr = await pipeline("automatic-speech-recognition", MODEL, {
-        device: m.webgpu ? "webgpu" : "wasm",
-        // fp32 encoder keeps accuracy; the decoder is small enough to quantize
+                device: m.webgpu ? "webgpu" : "wasm",
         dtype: m.webgpu ? { encoder_model: "fp32", decoder_model_merged: "q4" } : { encoder_model: "q8", decoder_model_merged: "q8" },
         progress_callback: (p) => {
           if (p.status === "progress" && p.total) {
@@ -53,7 +53,7 @@ self.onmessage = async (e) => {
     try {
       // the library assumes English unless told, which turns Chinese into an
       // English translation: identify the language first, then transcribe in it
-      const language = await detect(m.audio);
+      const language = m.lang || await detect(m.audio);
       const out = await asr(m.audio, { task: "transcribe", language, chunk_length_s: 30 });
       self.postMessage({ id: m.id, text: (out.text ?? "").trim(), lang: language });
     } catch (err) {

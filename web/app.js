@@ -21,7 +21,8 @@ const store = { get: (k) => { try { return localStorage.getItem(k); } catch { re
 let mode = store.get("vox.mode");
 let trapsOn = true, turnsSinceTrap = 0;
 let generation = null; // AbortController for the reply being generated
-let lastSaid = ""; // the last thing the bot said, to spot it echoing back through the mic
+let lastSaid = "";
+let langLock = null; // a language picked by hand; null = follow whatever you speak // the last thing the bot said, to spot it echoing back through the mic
 const voice = new Voice();
 const face = new Face($("face"));
 let speaking = false;
@@ -76,23 +77,32 @@ $("menu").onclick = () => openSheet(!$("sheet").classList.contains("open"));
 $("scrim").onclick = () => openSheet(false);
 const nice = (s) => s.charAt(0) + s.slice(1).toLowerCase();
 
+{
+  const b = document.createElement("button");
+  b.className = "chip"; b.textContent = "Auto"; b.dataset.lang = "auto";
+  b.setAttribute("aria-pressed", "true");
+  b.onclick = () => { langLock = null; markLang(); show("Auto: speak any language and I'll answer in it.", "sys"); };
+  $("langs").append(b);
+}
+function markLang() {
+  document.querySelectorAll("#langs .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.lang === (langLock ?? "auto"))));
+  $("lang-label").textContent = langLock ? nice(LANGS[lang].name) : `Auto: ${nice(LANGS[lang].name)}`;
+}
 for (const [code, l] of Object.entries(LANGS)) {
   const b = document.createElement("button");
   b.className = "chip";
   b.textContent = nice(l.name);
   b.setAttribute("aria-pressed", String(code === lang));
   b.dataset.lang = code;
-  b.onclick = () => { setLang(code); show(`Now in ${b.textContent}. Go on, say something.`, "sys"); };
+  b.onclick = () => { langLock = code; setLang(code); show(`Now in ${b.textContent}. Go on, say something.`, "sys"); };
   $("langs").append(b);
 }
 /** Switch the reply language: captions, voice and the AI all follow. */
 function setLang(code) {
   if (!LANGS[code]) return;
   lang = code;
-  let label = code;
-  document.querySelectorAll("#langs .chip").forEach((k) => { const on = k.dataset.lang === code; k.setAttribute("aria-pressed", String(on)); if (on) label = k.textContent; });
   if (lang !== "en" && preset.engine === "kokoro") selectVoice(VOICES.find((v) => v.id === "polyglot") ?? VOICES[0]);
-  $("lang-label").textContent = label;
+  markLang();
   voice.preload(preset, lang);
 }
 function selectVoice(v) {
@@ -298,13 +308,11 @@ function isEcho(t) {
 async function handle(text) {
   text = text.trim();
   if (!text) return;
-  const heardLang = detectLang(text, lang);
+  const heardLang = langLock ?? detectLang(text, lang);
   if (heardLang !== lang) setLang(heardLang);
   // the brain you picked is the brain that answers: no silent switching
-  if (mode !== "lite" && hasGPU && !llm.ready && !llm.failed) {
-    show(`Still loading the AI (${Math.round(llm.progress * 100)}%). Give it a moment, or pick the joke engine in settings.`, "sys", text);
-    return;
-  }
+  // while the AI is still downloading, the joke engine answers this turn only;
+  // your choice stays, and the AI takes over the moment it is ready
   const smart = mode !== "lite" && llm.ready && !brain.traps.active;
   const wantsTrap = brain.intent(text, lang) === "trap" || (trapsOn && ++turnsSinceTrap >= 6);
   if (smart && !wantsTrap) return handleSmart(text);
@@ -434,7 +442,7 @@ function release() {
       let said = "";
       try {
         const audio = await recorder.stop();
-        if (audio.length > 16000 * 0.3) said = await whisper.transcribe(audio);
+        if (audio.length > 16000 * 0.3) said = await whisper.transcribe(audio, langLock);
       } catch (e) { console.warn("Whisper failed:", e); }
       thinking = false;
       if (session !== turnId) return;

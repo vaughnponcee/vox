@@ -31,11 +31,12 @@ export class Whisper {
     this.onStatus();
   }
 
-  transcribe(audio16k) {
+  /** lang: force a language code, or null to detect it. */
+  transcribe(audio16k, lang = null) {
     return new Promise((resolve, reject) => {
       const id = ++this.nextId;
       this.waiting.set(id, { resolve, reject });
-      this.worker.postMessage({ type: "run", id, audio: audio16k }, [audio16k.buffer]);
+      this.worker.postMessage({ type: "run", id, audio: audio16k, lang }, [audio16k.buffer]);
     });
   }
 }
