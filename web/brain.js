@@ -50,7 +50,7 @@ export function ratio(a, b) {
   return (2 * matches(0, A.length, 0, B.length)) / (A.length + B.length);
 }
 
-const normCache = new Map();
+const normCache = new Map(), reCache = new Map();
 export function containsPhrase(text, phrases, threshold = 0.82) {
   const t = norm(text), tw = t.split(" ");
   for (const raw of phrases) {
@@ -58,8 +58,10 @@ export function containsPhrase(text, phrases, threshold = 0.82) {
     if (p === undefined) { p = norm(raw); normCache.set(raw, p); }
     if (!p) continue;
     if (NOSPACE_RE.test(p)) { if (t.includes(p)) return true; continue; }
-    const esc = p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    if (new RegExp(`(?<!${WORD})${esc}(?!${WORD})`, "u").test(t)) return true;
+    // compiling a regex per phrase per call cost ~100 ms a reply: compile once
+    let re = reCache.get(p);
+    if (!re) { re = new RegExp(`(?<!${WORD})${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?!${WORD})`, "u"); reCache.set(p, re); }
+    if (re.test(t)) return true;
     if (p.length < 4) continue;
     const n = p.split(" ").length;
     for (let i = 0; i < Math.max(1, tw.length - n + 1); i++) {
@@ -276,9 +278,14 @@ export class Brain {
 
   /** Which intent (joke, riddle, roast, trap) the text asks for, or null. */
   intent(text, lang) {
+    // asked several times per reply with the same text: remember the last answer
+    const key = lang + "\u0000" + text;
+    if (this._intentKey === key) return this._intent;
+    let found = null;
     for (const [name, byLang] of Object.entries(this.data.intents))
-      if (containsPhrase(text, [...(byLang[lang] ?? []), ...(lang !== "en" ? byLang.en : [])], 0.88)) return name;
-    return null;
+      if (containsPhrase(text, [...(byLang[lang] ?? []), ...(lang !== "en" ? byLang.en : [])], 0.88)) { found = name; break; }
+    this._intentKey = key; this._intent = found;
+    return found;
   }
 
   pick(kind, lang, topic) {

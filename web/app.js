@@ -1,11 +1,11 @@
 // vox-chaos: push-to-talk, speech recognition, the brain, the audio queue,
 // voices, stings and the mascot, wired together.
-import { Brain, detectLang } from "./brain.js?v=mwoewrpl";
-import { Whisper, Recorder } from "./stt.js?v=mwoewrpl";
-import { AudioQueue, sentences } from "./queue.js?v=mwoewrpl";
-import { Voice, VOICES, LANGS } from "./voice.js?v=mwoewrpl";
-import { Face } from "./face.js?v=mwoewrpl";
-import { LLM, MODELS, clean, webgpuAvailable } from "./llm.js?v=mwoewrpl";
+import { Brain, detectLang } from "./brain.js?v=mwof6hhj";
+import { Whisper, Recorder } from "./stt.js?v=mwof6hhj";
+import { AudioQueue, sentences } from "./queue.js?v=mwof6hhj";
+import { Voice, VOICES, LANGS } from "./voice.js?v=mwof6hhj";
+import { Face } from "./face.js?v=mwof6hhj";
+import { LLM, MODELS, clean, webgpuAvailable } from "./llm.js?v=mwof6hhj";
 
 const $ = (id) => document.getElementById(id);
 const [corpus, data] = await Promise.all([

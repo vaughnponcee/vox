@@ -7,6 +7,15 @@ export class Face {
   constructor(canvas) {
     this.c = canvas;
     this.g = canvas.getContext("2d");
+    // render at the size it is shown (capped at 1.5x: sharp but cheap),
+    // not a fixed 640x640 that is scaled down every frame
+    const fit = () => {
+      const r = canvas.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 1.5);
+      const px = Math.round(Math.min(r.width, r.height) * d);
+      if (px >= 120 && canvas.width !== px) { canvas.width = px; canvas.height = px; }
+    };
+    fit();
+    new ResizeObserver(fit).observe(canvas);
     this.level = 0;
     this.blink = 0;
     this.nextBlink = 2;
