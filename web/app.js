@@ -33,7 +33,11 @@ let loadingText = "";
 function refreshState() {
   const s = holding ? "listening" : thinking ? "thinking" : speaking ? "talking" : "idle";
   document.body.dataset.state = s;
-  $("status").textContent = s === "idle" && loadingText ? loadingText : STATUS[s];
+  // a first reply can wait on the one-time voice download: say so instead of going quiet
+  const voiceLoading = voice.piperProgress != null && voice.piperProgress < 1 && voice.piperOk !== true;
+  $("status").textContent = s === "idle" && loadingText ? loadingText
+    : (s === "thinking" || queue.busy) && voiceLoading ? `Loading the voice... ${Math.round(voice.piperProgress * 100)}%`
+    : STATUS[s];
   face.listening = s === "listening";
   face.thinking = s === "thinking";
 }
@@ -144,6 +148,7 @@ document.querySelectorAll("[data-sting]").forEach((b) => (b.onclick = () => {
 }));
 
 voice.onStatus = () => {
+  refreshState();
   const s = voice.status;
   $("engine").textContent =
     preset.engine === "kokoro"
@@ -258,7 +263,7 @@ async function handleLite(text, logged = false) {
 
 const send = () => {
   voice.unlock();
-  if (!voice.loading && $("sw-neural").checked) void voice.loadKokoro();
+  if (preset.engine === "kokoro" && !voice.loading) void voice.loadKokoro();
   queue.interrupt();
   void handle($("text").value);
   $("text").value = "";
@@ -293,7 +298,7 @@ function press() {
   if (holding) return;
   holding = true;
   voice.unlock();
-  if ($("sw-neural").checked && !voice.loading) void voice.loadKokoro();
+  if (preset.engine === "kokoro" && !voice.loading) void voice.loadKokoro();
   queue.interrupt(); // you talk, it shuts up
   generation?.abort();
   $("ptt").classList.add("down");
