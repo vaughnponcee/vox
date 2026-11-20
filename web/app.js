@@ -21,7 +21,6 @@ const store = { get: (k) => { try { return localStorage.getItem(k); } catch { re
 let mode = store.get("vox.mode");
 let trapsOn = true, turnsSinceTrap = 0;
 let generation = null; // AbortController for the reply being generated
-let slowGPU = false, slowStrikes = 0;
 let lastSaid = ""; // the last thing the bot said, to spot it echoing back through the mic
 const voice = new Voice();
 const face = new Face($("face"));
@@ -165,7 +164,6 @@ $("llm-url").onchange = () => { if ($("sw-llm").checked) brain.llmUrl = $("llm-u
 // ---------------------------------------------------------------- brain mode
 function setMode(m) {
   mode = m;
-  slowGPU = false; slowStrikes = 0;
   store.set("vox.mode", m);
   document.querySelectorAll("#modes .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.mode === m)));
   $("setup").hidden = true;
@@ -177,7 +175,6 @@ function setMode(m) {
 function renderBrainNote() {
   $("brain-note").textContent = mode === "lite" ? "Instant joke engine: traps, roasts and riddles. No download."
     : !hasGPU ? "This browser has no WebGPU, so the AI can't run here. Using the joke engine. Try Chrome or Edge."
-    : slowGPU ? "Your GPU is too slow for the AI to answer quickly, so the joke engine is answering. Try Fast AI."
     : llm.ready ? `Running ${llm.model.split("-q4")[0]} on your GPU.`
     : `Downloads ${MODELS[mode].size} once, then works offline.`;
 }
@@ -196,6 +193,7 @@ function loadModel() {
     loadingText = ""; refreshState(); renderBrainNote();
   }).catch((e) => {
     console.warn("LLM failed to load:", e);
+    llm.failed = true;
     loadingText = "";
     refreshState();
     $("brain-note").textContent = "The AI couldn't start on this device, so the joke engine is answering.";
@@ -269,23 +267,19 @@ async function handleSmart(text) {
   };
   // a GPU too slow to start replying within 12 s would leave you hanging:
   // answer this turn with the joke engine instead
-  let started = false;
-  const slow = setTimeout(() => { if (!started) { ctrl.abort(); if (++slowStrikes >= 2) slowGPU = true; renderBrainNote(); void handleLite(text, true); } }, 12000);
   try {
     for await (const piece of llm.reply(text, lang, ctrl.signal)) {
-      started = true;
       if (ctrl.signal.aborted) return;
       buf += piece;
       while (buf && /[.!?…]["')\]]*\s|[。！？]/.test(buf)) { const before = buf; flush(false); if (buf === before) break; }
     }
     if (!ctrl.signal.aborted) flush(true);
-    clearTimeout(slow);
-    if (started) slowStrikes = 0;
+
   } catch (e) {
-    clearTimeout(slow);
-    console.warn("LLM reply failed, using the joke engine:", e);
-    thinking = false;
-    return handleLite(text, true);
+    console.warn("LLM reply failed:", e);
+    thinking = false; refreshState();
+    if (!ctrl.signal.aborted) show("My brain glitched on that one. Try again, or pick another brain in settings.", "sys", text);
+    return;
   }
   thinking = false;
   if (said) {
@@ -306,7 +300,12 @@ async function handle(text) {
   if (!text) return;
   const heardLang = detectLang(text, lang);
   if (heardLang !== lang) setLang(heardLang);
-  const smart = mode !== "lite" && llm.ready && !brain.traps.active && !slowGPU;
+  // the brain you picked is the brain that answers: no silent switching
+  if (mode !== "lite" && hasGPU && !llm.ready && !llm.failed) {
+    show(`Still loading the AI (${Math.round(llm.progress * 100)}%). Give it a moment, or pick the joke engine in settings.`, "sys", text);
+    return;
+  }
+  const smart = mode !== "lite" && llm.ready && !brain.traps.active;
   const wantsTrap = brain.intent(text, lang) === "trap" || (trapsOn && ++turnsSinceTrap >= 6);
   if (smart && !wantsTrap) return handleSmart(text);
   if (wantsTrap) turnsSinceTrap = 0;
