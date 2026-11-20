@@ -140,7 +140,8 @@ function stepPicker(d) {
   if (v.engine === "kokoro") void voice.loadKokoro();
   speak(`Hi, I'm ${vname(v)}. Pick me.`, null);
 }
-function openPicker() {
+function openPicker(first = false) {
+  $("pv-cancel").hidden = first;
   prevVoice = preset;
   pickIdx = Math.max(0, VOICES.indexOf(preset));
   renderPicker();
@@ -175,7 +176,7 @@ $("llm-url").onchange = () => { if ($("sw-llm").checked) brain.llmUrl = $("llm-u
 function setMode(m) {
   mode = m;
   store.set("vox.mode", m);
-  document.querySelectorAll("#modes .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.mode === m)));
+  document.querySelectorAll("#modes .chip, #pv-modes .chip").forEach((k) => k.setAttribute("aria-pressed", String(k.dataset.mode === m)));
   $("setup").hidden = true;
   voice.preload(preset, lang);
   if (m !== "lite") loadModel();
@@ -496,8 +497,10 @@ function frame(now) {
 requestAnimationFrame(frame);
 refreshState();
 // first visit: choose a brain (the AI is a big download, so ask)
-if (!mode) { $("setup").hidden = false; $("gpu-note").textContent = hasGPU ? "Your browser supports WebGPU." : "This browser has no WebGPU, so only the joke engine can run here (try Chrome or Edge)."; if (!hasGPU) document.querySelectorAll("#setup [data-mode='smart'], #setup [data-mode='fast']").forEach((b) => (b.disabled = true)); }
-else setMode(mode);
+// opens on "Choose a voice"; the brain is picked there too (no settings panel)
+if (!hasGPU) document.querySelectorAll("#pv-modes [data-mode='smart'], #pv-modes [data-mode='fast']").forEach((b) => { b.disabled = true; b.title = "Needs WebGPU (Chrome or Edge)"; });
+setMode(mode ?? (hasGPU ? "fast" : "lite"));
+openPicker(true);
 voice.onStatus();
 // start the multilingual recognizer now so it is ready by your first sentence
 whisper.load(hasGPU);

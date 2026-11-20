@@ -10,14 +10,19 @@ const MODEL = "onnx-community/Kokoro-82M-v1.0-ONNX";
 
 // Voice presets. Piper voices follow the selected language when it isn't English
 // (each language has its own Piper speaker); Kokoro is English only.
+// Piper "medium" voices: generate about 2.5x faster than real time on a CPU
+// ("high" ones took 3x LONGER than real time, which was the slow-reply problem)
 export const VOICES = [
-  { id: "lessac", desc: "Clear and upbeat", label: "Lessac (HQ)", engine: "piper", voice: "en_US-lessac-high", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "hfc", desc: "Warm and friendly", label: "Hazel", engine: "piper", voice: "en_US-hfc_female-medium", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "ryan", desc: "Deep and laid back", label: "Ryan (HQ)", engine: "piper", voice: "en_US-ryan-high", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "cori", desc: "Crisp and British", label: "Cori (UK, HQ)", engine: "piper", voice: "en_GB-cori-high", lang: "en-GB", pitch: 0, rate: 1 },
-  { id: "natural", desc: "Smooth, every language", label: "Natural (Edge)", engine: "natural", voice: null, lang: "auto", pitch: 0, rate: 1.05 },
-  { id: "heart", desc: "Expressive studio voice", label: "Heart (studio, GPU)", engine: "kokoro", voice: "af_heart", lang: "en-US", pitch: 0, rate: 1.05 },
-  { id: "george", desc: "Dry British wit", label: "George (studio, GPU)", engine: "kokoro", voice: "bm_george", lang: "en-GB", pitch: 0, rate: 0.95 },
+  { id: "ryan", desc: "Male, laid back", label: "Ryan", engine: "piper", voice: "en_US-ryan-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "joe", desc: "Male, upbeat", label: "Joe", engine: "piper", voice: "en_US-joe-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "norman", desc: "Male, deep", label: "Norman", engine: "piper", voice: "en_US-norman-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "bryce", desc: "Male, young", label: "Bryce", engine: "piper", voice: "en_US-bryce-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "alan", desc: "Male, British", label: "Alan", engine: "piper", voice: "en_GB-alan-medium", lang: "en-GB", pitch: 0, rate: 1 },
+  { id: "lessac", desc: "Female, clear", label: "Lessac", engine: "piper", voice: "en_US-lessac-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "hfc", desc: "Female, warm", label: "Hazel", engine: "piper", voice: "en_US-hfc_female-medium", lang: "en-US", pitch: 0, rate: 1.05 },
+  { id: "natural", desc: "Instant, every language", label: "Natural (Edge)", engine: "natural", voice: null, lang: "auto", pitch: 0, rate: 1.05 },
+  { id: "george", desc: "Male, studio quality", label: "George (studio, GPU)", engine: "kokoro", voice: "bm_george", lang: "en-GB", pitch: 0, rate: 0.95 },
+  { id: "heart", desc: "Female, studio quality", label: "Heart (studio, GPU)", engine: "kokoro", voice: "af_heart", lang: "en-US", pitch: 0, rate: 1.05 },
   { id: "browser", desc: "Plain and instant", label: "Basic browser voice", engine: "native", voice: null, lang: "auto", pitch: 0, rate: 1 },
 ];
 

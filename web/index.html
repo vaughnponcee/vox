@@ -120,6 +120,10 @@
   .arrow{width:34px;height:34px;border-radius:50%;border:0;background:none;color:var(--mute);cursor:pointer;display:grid;place-items:center}
   .arrow:hover{background:#0000000a;color:var(--ink)}
   .arrow svg{width:18px;height:18px}
+  .pv-modes{display:flex;gap:6px;background:#0000000a;border-radius:999px;padding:4px}
+  .pv-modes .chip{border:0;background:none;border-radius:999px;padding:7px 14px;font-size:13.5px;color:var(--mute);cursor:pointer}
+  .pv-modes .chip[aria-pressed="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 4px #0000001a}
+  .pv-modes .chip:disabled{opacity:.4;cursor:not-allowed}
   .start{border:0;border-radius:999px;background:var(--ink);color:#fff;font-weight:500;padding:14px 34px;cursor:pointer;font-size:15px}
   .start:hover{background:#2c2a35}
   .cancel{border:0;background:none;color:var(--mute);cursor:pointer;font-size:14px}
@@ -148,6 +152,7 @@
       <button class="arrow" id="pv-next" aria-label="Next voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       <button class="side" id="pv-next-name"></button>
     </div>
+    <div class="pv-modes" id="pv-modes" role="group" aria-label="Brain"><button class="chip" data-mode="smart">Smart AI</button><button class="chip" data-mode="fast">Fast AI</button><button class="chip" data-mode="lite">Joke engine</button></div>
     <button class="start" id="pv-start">Start new chat</button>
     <button class="cancel" id="pv-cancel">Cancel</button>
   </div>
@@ -160,7 +165,7 @@
       <div class="ring" id="ring"></div>
       <button id="ptt" aria-label="Hold to talk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
     </div>
-    <button class="round" id="menu" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+    <button class="round" id="menu" title="Settings" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
     <button class="round stop" id="stop" title="End chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7 7 17"/></svg></button>
   </div>
   <div class="hint"><span>Hold the button or</span><kbd>Space</kbd><span id="timer"></span></div>

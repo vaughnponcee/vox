@@ -5,7 +5,7 @@
 
 /** Default Piper speaker per language; null means none exists (use the browser's voice). */
 export const PIPER_LANG = {
-  en: "en_US-lessac-high", zh: "zh_CN-huayan-medium", es: "es_MX-claude-high", fr: "fr_FR-siwis-medium",
+  en: "en_US-ryan-medium", zh: "zh_CN-huayan-medium", es: "es_MX-ald-medium", fr: "fr_FR-siwis-medium",
   it: "it_IT-paola-medium", pt: "pt_BR-faber-medium", ja: null, hi: null, th: null,
 };
 
