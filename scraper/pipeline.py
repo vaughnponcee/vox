@@ -97,7 +97,7 @@ REMOTE_SOURCES = [
 def fetch_json(url: str, limiter: RateLimiter, timeout: float = 20) -> object:
     host = urllib.parse.urlparse(url).netloc
     limiter.wait(host)
-    req = urllib.request.Request(url, headers={"User-Agent": "vox-chaos-corpus-builder/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "vox-corpus-builder/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         if r.status != 200:
             raise IOError(f"{url}: HTTP {r.status}")
@@ -242,7 +242,7 @@ def search(db: Path, query: str, limit: int = 5) -> list[tuple[str, str, str]]:
 if __name__ == "__main__":
     import argparse
     root = Path(__file__).resolve().parent.parent
-    ap = argparse.ArgumentParser(description="Build the vox-chaos comedy corpus.")
+    ap = argparse.ArgumentParser(description="Build the vox comedy corpus.")
     ap.add_argument("--remote", action="store_true", help="also fetch open datasets (rate limited, 1 request/s per host)")
     ap.add_argument("--search", help="query the built FTS5 index instead of building")
     a = ap.parse_args()

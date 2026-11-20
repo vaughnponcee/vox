@@ -1,4 +1,4 @@
-# vox-chaos
+# vox
 
 A hold-to-talk comedy voice bot. You talk; a small LLM on your GPU answers in a fast neural voice, with traps, roasts and sting sound effects, and a lip-synced mascot. Without a GPU it falls back to an instant joke engine. It speaks nine languages.
 
@@ -6,7 +6,7 @@ Nothing runs on a server: the AI and the voices run in your browser. Two ways to
 - **Web:** static files, on GitHub Pages.
 - **CLI:** a Python program.
 
-**Live:** https://vaughnponcee.github.io/vox-chaos/
+**Live:** https://vaughnponcee.github.io/vox/
 
 ```bash
 python -m scraper.pipeline --remote      # rebuild the corpus (seeds + open datasets)

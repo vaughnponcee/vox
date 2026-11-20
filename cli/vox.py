@@ -1,4 +1,4 @@
-"""vox-chaos in the terminal: type a line, the brain answers, a voice says it.
+"""vox in the terminal: type a line, the brain answers, a voice says it.
 
     python -m cli.vox                 # chat (voice if kokoro-onnx or edge-tts is installed)
     python -m cli.vox --lang es       # Spanish
@@ -29,7 +29,7 @@ from pathlib import Path
 
 from brain import Brain
 
-CACHE = Path(os.environ.get("VOX_CACHE", Path.home() / ".cache" / "vox-chaos"))
+CACHE = Path(os.environ.get("VOX_CACHE", Path.home() / ".cache" / "vox"))
 MODEL_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.int8.onnx"
 VOICES_URL = "https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin"
 
@@ -151,7 +151,7 @@ class Speaker:
 
 
 def main(argv: list[str] | None = None) -> None:
-    ap = argparse.ArgumentParser(description="vox-chaos comedy voice bot")
+    ap = argparse.ArgumentParser(description="vox comedy voice bot")
     ap.add_argument("--lang", default="en", choices=sorted(VOICES))
     ap.add_argument("--voice", default="auto", choices=["auto", "kokoro", "edge", "text"])
     ap.add_argument("--speed", type=float, default=1.0)
@@ -171,7 +171,7 @@ def main(argv: list[str] | None = None) -> None:
     brain = Brain(seed=a.seed, llm_url=a.llm, trap_every=0 if a.no_traps else 4)
     speaker = Speaker(a.voice, a.speed) if a.voice != "text" else None
     lang = "en" if a.lang == "gb" else a.lang
-    print(f"vox-chaos  [{lang}]  voice: {speaker.engine if speaker else 'text'}  brain: {'llm+hybrid' if a.llm else 'hybrid'}")
+    print(f"vox  [{lang}]  voice: {speaker.engine if speaker else 'text'}  brain: {'llm+hybrid' if a.llm else 'hybrid'}")
     print("talk to it. /lang xx switches language, /quit exits.\n")
     while True:
         try:

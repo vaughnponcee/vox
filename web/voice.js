@@ -3,7 +3,7 @@
 //   kokoro  Kokoro-82M, higher quality, English only; meant for machines with WebGPU
 //   native  the browser's own SpeechSynthesis, for languages without a neural voice
 // Neural audio goes through one AnalyserNode so the face can lip-sync.
-import { PIPER_LANG, onPiperProgress, piperSession, piperSynth } from "./piper.js?v=mwof6hhj";
+import { PIPER_LANG, onPiperProgress, piperSession, piperSynth } from "./piper.js?v=mwoh8r46";
 
 const KOKORO_URL = "https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm";
 const MODEL = "onnx-community/Kokoro-82M-v1.0-ONNX";
