@@ -56,7 +56,7 @@ export class LLM {
       if (!adapter?.features.has("shader-f16")) model = model.replace("q4f16_1", "q4f32_1");
       this.model = model;
       const { CreateWebWorkerMLCEngine } = await import(WEBLLM);
-      const worker = new Worker(new URL("./llm-worker.js", import.meta.url), { type: "module" });
+      const worker = new Worker(new URL("./llm-worker.js?v=mwoewrpl", import.meta.url), { type: "module" });
       this.engine = await CreateWebWorkerMLCEngine(worker, model, {
         initProgressCallback: (p) => { this.progress = p.progress ?? 0; this.progressText = p.text ?? ""; this.onProgress(); },
       });

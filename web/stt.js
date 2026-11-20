@@ -15,7 +15,7 @@ export class Whisper {
   load(webgpu) {
     if (this.worker) return;
     this.state = "loading";
-    this.worker = new Worker(new URL("./stt-worker.js", import.meta.url), { type: "module" });
+    this.worker = new Worker(new URL("./stt-worker.js?v=mwoewrpl", import.meta.url), { type: "module" });
     this.worker.onmessage = (e) => {
       const m = e.data;
       if (m.type === "progress") { this.progress = m.progress; this.onStatus(); return; }

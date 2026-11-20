@@ -15,7 +15,7 @@ const progressListeners = new Set();
 
 function getWorker() {
   if (worker) return worker;
-  worker = new Worker(new URL("./piper-worker.js", import.meta.url), { type: "module" });
+  worker = new Worker(new URL("./piper-worker.js?v=mwoewrpl", import.meta.url), { type: "module" });
   worker.onmessage = (e) => {
     const m = e.data;
     if (m.progress != null) { for (const f of progressListeners) f(m.progress, m.voiceId); return; }
