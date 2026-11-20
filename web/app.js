@@ -490,4 +490,6 @@ refreshState();
 if (!mode) { $("setup").hidden = false; $("gpu-note").textContent = hasGPU ? "Your browser supports WebGPU." : "This browser has no WebGPU, so only the joke engine can run here (try Chrome or Edge)."; if (!hasGPU) document.querySelectorAll("#setup [data-mode='smart'], #setup [data-mode='fast']").forEach((b) => (b.disabled = true)); }
 else setMode(mode);
 voice.onStatus();
-window.vox = { brain, voice, queue, handle, face, llm };
+// start the multilingual recognizer now so it is ready by your first sentence
+whisper.load(hasGPU);
+window.vox = { brain, voice, queue, handle, face, llm, whisper };

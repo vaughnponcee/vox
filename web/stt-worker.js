@@ -2,10 +2,28 @@
 // Whisper hears every supported language without being told which one, which is
 // what lets the bot switch language when you do.
 // Messages: {type:"load", webgpu} -> {type:"ready"} | progress; {type:"run", id, audio} -> {id, text} | {id, error}
-import { pipeline } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm";
+import { pipeline, Tensor } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm";
 
 const MODEL = "onnx-community/whisper-base";
 let asr = null;
+
+// the languages the bot speaks; Whisper picks the likeliest of these
+const LANGS = ["en", "zh", "ja", "es", "fr", "hi", "it", "pt", "th"];
+
+// special-token ids are the same in every multilingual Whisper checkpoint
+const ORDER = ["en", "zh", "de", "es", "ru", "ko", "fr", "ja", "pt", "tr", "pl", "ca", "nl", "ar", "sv", "it", "id", "hi", "fi", "vi", "he", "uk", "el", "ms", "cs", "ro", "da", "hu", "ta", "no", "th"];
+const FIXED = { "<|startoftranscript|>": 50258, ...Object.fromEntries(ORDER.map((l, i) => [`<|${l}|>`, 50259 + i])) };
+
+/** Whisper's own language identification: one decoder step after <|startoftranscript|>. */
+async function detect(audio) {
+  const id = (t) => FIXED[t] ?? asr.tokenizer.model?.tokens_to_ids?.get(t);
+  const { input_features } = await asr.processor(audio);
+  const out = await asr.model({ input_features, decoder_input_ids: new Tensor("int64", [BigInt(id("<|startoftranscript|>"))], [1, 1]) });
+  const logits = out.logits.data, V = out.logits.dims.at(-1);
+  let best = "en", bestScore = -Infinity;
+  for (const l of LANGS) { const sc = logits[logits.length - V + id(`<|${l}|>`)]; if (sc > bestScore) { bestScore = sc; best = l; } }
+  return best;
+}
 
 self.onmessage = async (e) => {
   const m = e.data;
@@ -33,8 +51,11 @@ self.onmessage = async (e) => {
   }
   if (m.type === "run") {
     try {
-      const out = await asr(m.audio, { task: "transcribe", chunk_length_s: 30 });
-      self.postMessage({ id: m.id, text: (out.text ?? "").trim() });
+      // the library assumes English unless told, which turns Chinese into an
+      // English translation: identify the language first, then transcribe in it
+      const language = await detect(m.audio);
+      const out = await asr(m.audio, { task: "transcribe", language, chunk_length_s: 30 });
+      self.postMessage({ id: m.id, text: (out.text ?? "").trim(), lang: language });
     } catch (err) {
       self.postMessage({ id: m.id, error: String(err?.message ?? err) });
     }
