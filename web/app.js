@@ -73,7 +73,6 @@ $("cc").onclick = () => {
 function hush() { generation?.abort(); queue.interrupt(); voice.nativeLevel = 0; if ("speechSynthesis" in window) speechSynthesis.cancel(); }
 // the X ends the chat: stop everything, then choose a voice for the next one
 $("stop").onclick = () => { release(); hush(); thinking = false; brain.traps.active = null; openPicker(); };
-$("menu").onclick = () => openSheet(!$("sheet").classList.contains("open"));
 $("scrim").onclick = () => openSheet(false);
 const nice = (s) => s.charAt(0) + s.slice(1).toLowerCase();
 
@@ -478,7 +477,8 @@ addEventListener("blur", release);
 
 // ---------------------------------------------------------------- render loop
 const buf = new Float32Array(1024);
-let last = performance.now(), mic = 0;
+let last = performance.now(), mic = 0, ringLast = -1;
+const ring = $("ring");
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
@@ -489,7 +489,9 @@ function frame(now) {
     m = Math.min(1, Math.sqrt(s / buf.length) * 5);
   }
   mic += (m - mic) * (m > mic ? 0.5 : 0.1);
-  $("ring").style.setProperty("--mic", String(1 + mic * 0.25));
+  // touch the DOM only when something visibly changed
+  const ringNow = Math.round(mic * 100);
+  if (ringNow !== ringLast) { ringLast = ringNow; ring.style.setProperty("--mic", String(1 + mic * 0.25)); }
   face.draw(voice.level(), dt);
   if (holding) $("timer").textContent = `${((now - recStart) / 1000).toFixed(1)}s`;
   requestAnimationFrame(frame);
@@ -502,6 +504,8 @@ if (!hasGPU) document.querySelectorAll("#pv-modes [data-mode='smart'], #pv-modes
 setMode(mode ?? (hasGPU ? "fast" : "lite"));
 openPicker(true);
 voice.onStatus();
-// start the multilingual recognizer now so it is ready by your first sentence
-whisper.load(hasGPU);
+// the multilingual recognizer needs a GPU to be quick; load it once the page is
+// idle so it never competes with the first screen. Without a GPU the browser's
+// own recognizer is used (instant, but it hears only the selected language).
+if (hasGPU) (window.requestIdleCallback ?? ((f) => setTimeout(f, 1500)))(() => whisper.load(true));
 window.vox = { brain, voice, queue, handle, face, llm, whisper };
