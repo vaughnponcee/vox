@@ -99,12 +99,13 @@ Measured on CPU after warm-up (real-time factor below 1 means faster than real t
 
 ## Look
 
-A phone-style screen on a pastel sky with drifting clouds and a skyline. The sky changes with the state: blue while listening, peach while thinking, mint while talking.
+Full window, a white page with a soft coloured glow behind the host. The glow follows the state: warm when idle, blue while listening, amber while thinking, mint while talking.
 
-- **The prompt card** overhangs the phone frame. It shows what you said, the bot's reply, and an emoji for the kind of reply (trap, roast, joke, generated).
-- **The host** is a coral gradient blob drawn on a canvas. It breathes when idle, widens its eyes and looks toward you while listening, wobbles while thinking, and opens its mouth with the voice's loudness while talking. Punchlines make it hop.
+- **The host** is a glossy coral blob drawn on a canvas. It breathes when idle, widens its eyes and looks toward you while listening, wobbles while thinking, and opens its mouth with the loudness of the voice. Punchlines make it hop.
 - **The status line** under the host reads Hold to talk, Listening, Contemplating or Talking.
-- **Settings** (language, voice, pitch, speed, stings, options and the conversation history) slide up from the menu button.
+- **Captions** below show what you said in grey and the reply in large type. The CC button hides them.
+- **Bottom controls:** captions, the hold-to-talk mic (with a ring that pulses with your voice), settings, and a red button that cuts the bot off mid-line.
+- **Settings** slide in from the right on desktop and up from the bottom on phones: language, voice, pitch, speed, stings, options and the conversation history.
 
 ## Push to talk
 

@@ -29,12 +29,10 @@ function refreshState() {
 }
 
 // ---------------------------------------------------------------- the card + history
-const EMOJI = { trap: "🎯", roast: "🔥", joke: "😂", grammar: "🌀", markov: "🎲", retrieval: "💬", llm: "🧠", sys: "🎤" };
-function show(text, kind, you = "") {
-  const card = $("card");
-  card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop");
-  $("emoji").textContent = EMOJI[kind] ?? "💬";
-  $("line").textContent = text;
+function show(text, _kind, you = "") {
+  const line = $("line");
+  line.classList.remove("fresh"); void line.offsetWidth; line.classList.add("fresh");
+  line.textContent = text;
   $("you").hidden = !you;
   $("you").textContent = you ? `“${you}”` : "";
 }
@@ -48,7 +46,14 @@ function history(text, who, tag = "") {
 }
 
 // ---------------------------------------------------------------- settings sheet
-const openSheet = (on) => { $("sheet").classList.toggle("open", on); $("scrim").classList.toggle("open", on); document.body.classList.toggle("sheet-open", on); };
+const openSheet = (on) => { $("sheet").classList.toggle("open", on); $("scrim").classList.toggle("open", on); };
+$("close").onclick = () => openSheet(false);
+$("cc").onclick = () => {
+  const on = $("cc").getAttribute("aria-pressed") !== "true";
+  $("cc").setAttribute("aria-pressed", String(on));
+  document.body.classList.toggle("cc-off", !on);
+};
+$("stop").onclick = () => { queue.interrupt(); voice.nativeLevel = 0; if ("speechSynthesis" in window) speechSynthesis.cancel(); };
 $("menu").onclick = () => openSheet(!$("sheet").classList.contains("open"));
 $("scrim").onclick = () => openSheet(false);
 const nice = (s) => s.charAt(0) + s.slice(1).toLowerCase();
@@ -62,6 +67,7 @@ for (const [code, l] of Object.entries(LANGS)) {
     lang = code;
     document.querySelectorAll("#langs .chip").forEach((k) => k.setAttribute("aria-pressed", String(k === b)));
     if (lang !== "en" && preset.engine === "kokoro") selectVoice(VOICES.find((v) => v.id === "polyglot"));
+    $("lang-label").textContent = b.textContent;
     show(`Now in ${b.textContent}. Go on, say something.`, "sys");
   };
   $("langs").append(b);
@@ -205,13 +211,20 @@ function press() {
     if (live) { $("you").hidden = false; $("you").textContent = `“${live}”`; }
   };
   rec.onerror = (e) => { if (e.error === "not-allowed") show("I need the microphone for that. Or switch on typing in the menu.", "sys"); };
-  rec.onend = () => {
-    rec = null;
-    const said = (heard + interim).trim();
-    if (said) void handle(said);
-    else if (!holding) show("I didn't catch that. Hold the button while you talk.", "sys");
-  };
+  const session = ++turnId;
+  // if the recognizer stops while the button is still held, wait for the release
+  rec.onend = () => { rec = null; if (!holding) finish(session); };
   try { rec.start(); } catch { /* already running */ }
+}
+
+let turnId = 0, answered = 0;
+/** Send what was heard to the brain, once per hold, whichever comes first: onend or the timeout. */
+function finish(session) {
+  if (answered >= session) return;
+  answered = session;
+  const said = (heard + interim).trim();
+  if (said) void handle(said);
+  else show("I didn't catch that. Hold the button while you talk.", "sys");
 }
 
 function release() {
@@ -220,7 +233,10 @@ function release() {
   $("ptt").classList.remove("down");
   $("timer").textContent = "";
   refreshState();
-  setTimeout(() => rec?.stop(), 250); // don't clip the last word
+  const session = turnId, r = rec;
+  setTimeout(() => r?.stop(), 250); // don't clip the last word
+  // some recognizers never fire onend after stop(): answer anyway
+  setTimeout(() => { if (rec === r) { try { r?.abort(); } catch { /* gone */ } rec = null; } finish(session); }, 1500);
 }
 
 const ptt = $("ptt");

@@ -115,6 +115,9 @@ export class BM25 {
 }
 
 // ---------------------------------------------------------------- layer 3: reflection
+const NOT_ING = new Set(["thing", "king", "ring", "wing", "spring", "string", "morning", "evening", "building", "ceiling", "wedding", "pudding", "ending"]);
+/** 'saying', 'eating': present participles describe actions, not subjects. */
+export const isIng = (w) => w.length > 4 && w.endsWith("ing") && !NOT_ING.has(w);
 export class Reflector {
   constructor(data) {
     this.stop = Object.fromEntries(Object.entries(data.stopwords).map(([k, v]) => [k, new Set(v)]));
@@ -143,7 +146,7 @@ export class Reflector {
     if (!words.length) return null;
     const runAfter = (i) => {
       const run = [];
-      for (const w of words.slice(i + 1, i + 4)) { if (stop.has(w) || verbs.has(w) || run.length === 2) break; run.push(w); }
+      for (const w of words.slice(i + 1, i + 4)) { if (stop.has(w) || verbs.has(w) || isIng(w) || run.length === 2) break; run.push(w); }
       return run;
     };
     for (let i = 0; i < words.length; i++) {
@@ -155,7 +158,7 @@ export class Reflector {
     const run = [];
     for (let i = words.length - 1; i >= 0; i--) {
       const w = words[i];
-      if (stop.has(w) || verbs.has(w) || [...w].length < 2) { if (run.length) break; continue; }
+      if (stop.has(w) || verbs.has(w) || isIng(w) || [...w].length < 2) { if (run.length) break; continue; }
       run.unshift(w);
       if (run.length === 2) break;
     }

@@ -123,6 +123,11 @@ class BM25:
 
 # ---------------------------------------------------------------- layer 3: reflection
 
+def is_ing(word: str) -> bool:
+    """'saying', 'eating': present participles describe actions, not subjects."""
+    return len(word) > 4 and word.endswith("ing") and word not in {"thing", "king", "ring", "wing", "spring", "string", "morning", "evening", "building", "ceiling", "wedding", "pudding", "ending"}
+
+
 class Reflector:
     def __init__(self, data: dict):
         self.stop = {lang: set(ws) for lang, ws in data["stopwords"].items()}
@@ -165,7 +170,7 @@ class Reflector:
         def run_after(i: int) -> list[str]:
             run = []
             for w in words[i + 1:i + 4]:
-                if w in stop or w in verbs or len(run) == 2:
+                if w in stop or w in verbs or is_ing(w) or len(run) == 2:
                     break
                 run.append(w)
             return run
@@ -180,7 +185,7 @@ class Reflector:
         # otherwise the last run of content words
         run: list[str] = []
         for w in reversed(words):
-            if w in stop or w in verbs or len(w) < 2:
+            if w in stop or w in verbs or is_ing(w) or len(w) < 2:
                 if run:
                     break
                 continue

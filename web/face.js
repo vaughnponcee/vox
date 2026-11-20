@@ -46,7 +46,7 @@ export class Face {
     const wob = this.thinking ? Math.sin(this.t * 6) * 0.06 : 0;
 
     // soft shadow on the ground
-    g.fillStyle = "rgba(60,40,80,.12)";
+    g.fillStyle = "rgba(60,40,80,.08)";
     g.beginPath();
     g.ellipse(cx, cy + R * 1.08, R * (0.8 - this.hop * 0.25), R * 0.12, 0, 0, Math.PI * 2);
     g.fill();
@@ -58,9 +58,9 @@ export class Face {
 
     // body: a slightly lumpy circle with little arm nubs
     const grad = g.createLinearGradient(-R, -R, R, R);
-    grad.addColorStop(0, "#ffb38a");
-    grad.addColorStop(0.55, "#ff7a6b");
-    grad.addColorStop(1, "#e8508a");
+    grad.addColorStop(0, "#ffc4a3");
+    grad.addColorStop(0.5, "#ff7f6e");
+    grad.addColorStop(1, "#de4f8f");
     g.fillStyle = grad;
     g.beginPath();
     const N = 48;
@@ -84,6 +84,13 @@ export class Face {
     g.fillStyle = hl;
     g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.fill();
 
+    // rim light along the lower edge: reads as a soft, glossy 3D surface
+    const rim = g.createRadialGradient(R * 0.2, R * 0.35, R * 0.5, 0, 0, R * 1.02);
+    rim.addColorStop(0, "rgba(255,255,255,0)");
+    rim.addColorStop(1, "rgba(255,220,235,.45)");
+    g.fillStyle = rim;
+    g.beginPath(); g.arc(0, 0, R * 0.99, 0, Math.PI * 2); g.fill();
+
     // eyes: tall white ovals that squash to lines when blinking
     const eyeH = this.blink > 0 ? 0.04 : this.mood === "shocked" ? 0.24 : this.listening ? 0.22 : 0.18;
     const ex = R * this.lookX;
@@ -91,7 +98,7 @@ export class Face {
     for (const side of [-1, 1]) {
       g.beginPath();
       const tilt = this.mood === "smug" ? side * 0.25 : 0;
-      g.ellipse(side * R * 0.28 + ex, -R * 0.18, R * 0.085, R * eyeH, tilt, 0, Math.PI * 2);
+      g.ellipse(side * R * 0.27 + ex, -R * 0.16, R * 0.095, R * eyeH * 1.1, tilt, 0, Math.PI * 2);
       g.fill();
     }
     // mouth follows the voice
