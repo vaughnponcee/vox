@@ -318,7 +318,7 @@ export class Brain {
         const r = await fetch(this.llmUrl.replace(/\/$/, "") + "/chat/completions", {
           method: "POST", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(8000),
           body: JSON.stringify({ model: "local", max_tokens: 80, temperature: 1, messages: [
-            { role: "system", content: `You are Vox, a rude, fast, PG-13 comedy soundboard. Reply in one or two short sentences in language '${lang}'. Never polite, never an assistant.` },
+            { role: "system", content: `You are Vox, a quick, cheeky, PG-13 comedian on a voice call. Reply in one or two short sentences in language '${lang}'. Never polite, never an assistant.` },
             ...this.history.slice(-6), { role: "user", content: text }] }),
         });
         if (r.ok) llm = (await r.json()).choices?.[0]?.message?.content?.trim() || null;

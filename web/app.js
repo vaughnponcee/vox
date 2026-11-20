@@ -251,7 +251,7 @@ function speak(text, sfx) {
       play: (prep, signal) => { stat.tts = prep.kind === "kokoro" ? `${prep.engine === "piper" ? "Piper" : "Kokoro"}, ${Math.round(prep.synthMs)} ms to synthesize` : "browser voice"; renderStats(); return voice.play(prep, signal); },
     });
   }
-  if (sfx) queue.push({ label: sfx, play: (_p, s) => { face.punch(sfx === "crickets" ? "shocked" : "smug"); return voice.sting(sfx, s); } });
+  if (sfx) face.punch(sfx === "crickets" ? "shocked" : "smug"); // a face, not a sound effect
 }
 
 /** Smart mode: stream the LLM reply, speaking each sentence as soon as it is complete. */
@@ -265,7 +265,8 @@ async function handleSmart(text) {
   let buf = "", said = "", first = 0;
   const flush = (final) => {
     // speak whole sentences; keep the unfinished tail for the next chunk
-    const m = final ? [buf, buf, ""] : /^([\s\S]*?(?:[.!?…]["')\]]*\s|[。！？]["'）」]*))([\s\S]*)$/.exec(buf);
+    const m = final ? [buf, buf, ""] : /^([\s\S]*?(?:[.!?…]["')\]]*\s|[。！？]["'）」]*))([\s\S]*)$/.exec(buf)
+      ?? (!said && /^(\S+(?:\s+\S+){5,}?[,;:]\s|[^，]{6,}，)([\s\S]*)$/.exec(buf));
     if (!m) return;
     const sentence = clean(m[1]);
     buf = final ? "" : m[2];
@@ -281,7 +282,7 @@ async function handleSmart(text) {
     for await (const piece of llm.reply(text, lang, ctrl.signal)) {
       if (ctrl.signal.aborted) return;
       buf += piece;
-      while (buf && /[.!?…]["')\]]*\s|[。！？]/.test(buf)) { const before = buf; flush(false); if (buf === before) break; }
+      while (buf && (/[.!?…]["')\]]*\s|[。！？]/.test(buf) || (!said && /(\S+\s+){6}\S*[,;:]\s|[^，]{6,}，/.test(buf)))) { const before = buf; flush(false); if (buf === before) break; }
     }
     if (!ctrl.signal.aborted) flush(true);
 

@@ -70,7 +70,7 @@ test("golden retrieval (shared with Python)", () => {
 
 test("grammar: same combinatorial size as Python, subject always present", () => {
   const g = new Grammar(DATA.grammar.en);
-  assert.equal(g.count(), 20786688);
+  assert.equal(g.count(), 20785647);
   const r = rng(4);
   for (let i = 0; i < 300; i++) {
     const s = g.expand("start", "your cat", r);

@@ -1,7 +1,7 @@
 // The host: a soft, squishy gradient blob drawn on a canvas each frame.
 // It breathes when idle, leans in and widens its eyes while listening, wobbles
 // while thinking, and its mouth opens with the output amplitude while talking.
-// Eyebrows aren't a thing for blobs, so punchlines get a squash-and-stretch hop.
+// Eyebrows aren't a thing for blobs, so punchlines get a change of expression.
 
 export class Face {
   constructor(canvas) {
@@ -18,7 +18,7 @@ export class Face {
     this.lookX = 0;
   }
 
-  punch(mood = "smug") { this.hop = 1; this.mood = mood; }
+  punch(mood = "smug") { this.mood = mood; this.moodT = 1.2; } // expression only: the mascot stays put
 
   /** Mouth shape from amplitude: closed, small, open, wide. */
   static shape(level) { return level < 0.08 ? 0 : level < 0.25 ? 1 : level < 0.55 ? 2 : 3; }
@@ -30,7 +30,8 @@ export class Face {
     const k = amplitude > this.level ? 0.55 : 0.2;
     this.level += (amplitude - this.level) * k;
     this.hop = Math.max(0, this.hop - dt * 1.6);
-    if (this.hop === 0 && this.mood !== "idle") this.mood = "idle";
+    this.moodT = Math.max(0, (this.moodT ?? 0) - dt);
+    if (this.moodT === 0 && this.mood !== "idle") this.mood = "idle";
     this.nextBlink -= dt;
     if (this.nextBlink <= 0) { this.blink = 0.13; this.nextBlink = 2.2 + Math.random() * 3; }
     this.blink = Math.max(0, this.blink - dt);
