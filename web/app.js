@@ -22,6 +22,7 @@ let mode = store.get("vox.mode");
 let trapsOn = true, turnsSinceTrap = 0;
 let generation = null; // AbortController for the reply being generated
 let slowGPU = false, slowStrikes = 0;
+let lastSaid = ""; // the last thing the bot said, to spot it echoing back through the mic
 const voice = new Voice();
 const face = new Face($("face"));
 let speaking = false;
@@ -45,6 +46,7 @@ function refreshState() {
 
 // ---------------------------------------------------------------- the card + history
 function show(text, _kind, you = "") {
+  if (_kind !== "sys") lastSaid = text;
   const line = $("line");
   line.classList.remove("fresh"); void line.offsetWidth; line.classList.add("fresh");
   line.textContent = text;
@@ -293,6 +295,12 @@ async function handleSmart(text) {
   refreshState();
 }
 
+/** True when the mic mostly picked up the bot itself. */
+function isEcho(t) {
+  const w = (x) => x.toLowerCase().match(/[\p{L}\p{N}']+/gu) ?? [];
+  const mine = w(t), bot = new Set(w(lastSaid));
+  return mine.length > 2 && mine.filter((x) => bot.has(x)).length / mine.length > 0.7;
+}
 async function handle(text) {
   text = text.trim();
   if (!text) return;
@@ -384,14 +392,16 @@ function press() {
   rec.lang = LANGS[lang].bcp;
   rec.interimResults = true;
   rec.continuous = true;
+  const me = rec;
   rec.onresult = (e) => {
+    if (rec !== me || answered >= turnId) return; // a stale recognizer hearing the bot's own voice
     interim = "";
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) heard += e.results[i][0].transcript + " ";
       else interim += e.results[i][0].transcript;
     }
     const live = (heard + interim).trim();
-    if (live) { $("you").hidden = false; $("you").textContent = `“${live}”`; }
+    if (live && holding) { $("you").hidden = false; $("you").textContent = `“${live}”`; }
   };
   rec.onerror = (e) => { if (e.error === "not-allowed") show("I need the microphone for that. Or switch on typing in the menu.", "sys"); };
   const session = ++turnId;
@@ -406,7 +416,7 @@ function finish(session) {
   if (answered >= session) return;
   answered = session;
   const said = (heard + interim).trim();
-  if (said) void handle(said);
+  if (said && !isEcho(said)) void handle(said);
   else show("I didn't catch that. Hold the button while you talk.", "sys");
 }
 
@@ -432,13 +442,13 @@ function release() {
       answered = session;
       // Whisper invents filler like "Thank you." on silence; ignore bracketed noise tags
       said = said.replace(/\[[^\]]*\]|\([^)]*\)/g, "").trim();
-      if (said) void handle(said);
+      if (said && !isEcho(said)) void handle(said);
       else { refreshState(); show("I didn't catch that. Hold the button while you talk.", "sys"); }
     }, 200);
     return;
   }
   const session = turnId, r = rec;
-  setTimeout(() => r?.stop(), 250); // don't clip the last word
+  setTimeout(() => { try { r?.stop(); } catch { /* gone */ } }, 250); // don't clip the last word
   // some recognizers never fire onend after stop(): answer anyway
   setTimeout(() => { if (rec === r) { try { r?.abort(); } catch { /* gone */ } rec = null; } finish(session); }, 1500);
 }
